@@ -11,34 +11,38 @@ const stringify = require('json-stringify-deterministic');
 const sortKeysRecursive = require('sort-keys-recursive');
 const { Contract } = require('fabric-contract-api');
 
-class Prescription extends Contract {
+class Doctor extends Contract {
 
-    async CreatePrescription(ctx, id, pid, name, age, date, disease, medicine) {
+
+    // Createsuer to the world state with given details.
+    async CreateDoctor(ctx, id, name, gender, phn, email, specialization) {
         const exists = await this.AssetExists(ctx, id);
         if (exists) {
-            throw new Error(`The prescription id ${id} already exists`);
+            throw new Error(`The user ${id} already exists`);
         }
 
-        const prescription = {
+        const user = {
             ID: id,
-            PID: pid,
             Name: name,
-            Age: age,
-            Date: date,
-            Disease: disease,
-            Medicine: medicine,
+            Gender: gender,
+            Phoneno: phn,
+            Email: email,
+            Specialization: specialization,
         };
         //we insert data in alphabetic order using 'json-stringify-deterministic' and 'sort-keys-recursive'
-        await ctx.stub.putState(id, Buffer.from(stringify(sortKeysRecursive(prescription))));
-        return JSON.stringify(prescription);
+        await ctx.stub.putState(id, Buffer.from(stringify(sortKeysRecursive(user))));
+        return JSON.stringify(user);
     }
 
-    async QueryPrescriptionByPatient(ctx, pid) { //complex query
-        let queryString = {};
-        queryString.selector = {};
-        queryString.selector.PID = pid;
-        return await this.GetQueryResultForQueryString(ctx, JSON.stringify(queryString));
+    // find user
+    async FindDoctor(ctx, id) {
+        const assetJSON = await ctx.stub.getState(id); // get the asset from chaincode state
+        if (!assetJSON || assetJSON.length === 0) {
+            throw new Error(`The user ${id} does not exist`);
+        }
+        return assetJSON.toString();
     }
+
 
     async GetQueryResultForQueryString(ctx, queryString) {
 
@@ -101,7 +105,7 @@ class Prescription extends Contract {
     }
 
     // DeleteAsset deletes an given asset from the world state.
-    async DeleteAsset(ctx, id) {
+    async DeleteDoctor(ctx, id) {
         const exists = await this.AssetExists(ctx, id);
         if (!exists) {
             throw new Error(`The asset ${id} does not exist`);
@@ -148,4 +152,4 @@ class Prescription extends Contract {
     }
 }
 
-module.exports = Prescription;
+module.exports = Doctor;

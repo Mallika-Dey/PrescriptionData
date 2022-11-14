@@ -7,6 +7,10 @@
 'use strict';
 
 const prescription = require('./lib/prescription');
+const patient = require('./lib/patient');
+const doctor = require('./lib/doctor');
 
 module.exports.Prescription = prescription;
-module.exports.contracts = [prescription];
+module.exports.Patient = patient;
+module.exports.Doctor = doctor;
+module.exports.contracts = [prescription, patient, doctor];

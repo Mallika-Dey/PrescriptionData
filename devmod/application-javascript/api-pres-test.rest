@@ -1,0 +1,13 @@
+POST http://localhost:5000/CreatePrescription
+Content-Type: application/json
+
+{
+     "id": "pres2",
+     "pid": "op2",
+     "name": "Alice",
+     "age": "22",
+     "date": "21/10/22",
+     "disease": "Pneumonia",
+     "medicine": "amoxicillin tablet"
+}
+
