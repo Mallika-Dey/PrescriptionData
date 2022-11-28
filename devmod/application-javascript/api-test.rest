@@ -5,16 +5,9 @@ Content-Type: application/json
      "id": "p1",
      "name": "Bob",
      "gender": "M", 
-     "email": "mallikaju307@gmail.com",
+     "email": "bob@gmail.com",
      "phn": "01556894652"
 }
 
-POST http://localhost:5000/login
-Content-Type: application/json
-
-{
-     "userId": "p1",
-     "pKey": "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgANORSTHt17G/I6kCiYVOzJ7sF9kmtUSPgcHnj4GI8v2hRANCAASdOdUJAoPx2OfQtmDLvU1yYP47EEtxEKpwky29pekJ67VdCdGNnwIoOxjrsPm7poNMAb8tbDgdeIxa5GV3UFIk"
-}
 
 

@@ -149,7 +149,7 @@ function createOrgs() {
     fi
     infoln "Generating certificates using cryptogen tool"
 
-    infoln "Creating Org1 Identities"
+    infoln "Creating HealthOrg1 Identities"
 
     set -x
     cryptogen generate --config=./organizations/cryptogen/crypto-config-org1.yaml --output="organizations"
@@ -159,7 +159,7 @@ function createOrgs() {
       fatalln "Failed to generate certificates..."
     fi
 
-    infoln "Creating Org2 Identities"
+    infoln "Creating HealthOrg2 Identities"
 
     set -x
     cryptogen generate --config=./organizations/cryptogen/crypto-config-org2.yaml --output="organizations"
@@ -211,7 +211,7 @@ function createOrgs() {
 
   fi
 
-  infoln "Generating CCP files for Org1 and Org2"
+  infoln "Generating CCP files for HealthOrg1 and HealthOrg2"
   ./organizations/ccp-generate.sh
 }
 
@@ -367,7 +367,7 @@ MAX_RETRY=5
 # default for delay between commands
 CLI_DELAY=3
 # channel name defaults to "mychannel"
-CHANNEL_NAME="mychannel"
+CHANNEL_NAME="healthorg"
 # chaincode name defaults to "NA"
 CC_NAME="NA"
 # chaincode path defaults to "NA"

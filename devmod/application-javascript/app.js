@@ -9,18 +9,14 @@
 const { Gateway, Wallets } = require('fabric-network');
 const FabricCAServices = require('fabric-ca-client');
 const path = require('path');
-const { buildCAClient, registerAndEnrollUser, enrollAdmin } = require('../../test-application/javascript/CAUtil.js');
-const { buildCCPOrg1, buildWallet } = require('../../test-application/javascript/AppUtil.js');
-//---for org2
-//const { buildCCPOrg2, buildWallet2 } = require('../../test-application/javascript/AppUtil.js');
+const { buildCAClient, registerAndEnrollUser , enrollAdmin} = require('../../test-application/javascript/CAUtil.js');
+const { buildCCPOrg1, buildCCPOrg2, buildWallet } = require('../../test-application/javascript/AppUtil.js');
 
-const channelName = 'mychannel';
+const channelName = 'healthorg';
 const chaincodeName = 'telemedicine';
 const mspOrg1 = 'Org1MSP';
-//const mspOrg2 = 'Org2MSP';
 const walletPath = path.join(__dirname, 'wallet');
-//const walletPath2 = path.join(__dirname, 'wallet2'); //---for org2
-const org1UserId = 'appUser';
+const org1UserId = 'docOrg1';
 
 function prettyJSONString(inputString) {
     return JSON.stringify(JSON.parse(inputString), null, 2);
@@ -30,23 +26,17 @@ async function main() {
     try {
         // build an in memory object with the network configuration (also known as a connection profile)
         const ccp = buildCCPOrg1();
-        //const ccp2 = buildCCPOrg2();//---for org2
 
         // build an instance of the fabric ca services client based on
         // the information in the network configuration
         const caClient = buildCAClient(FabricCAServices, ccp, 'ca.org1.example.com');
-        //const caClient2 = buildCAClient(FabricCAServices, ccp2, 'ca.org2.example.com');//---for org2
 
         // setup the wallet to hold the credentials of the application user
         const wallet = await buildWallet(Wallets, walletPath);
-        //const wallet2 = await buildWallet(Wallets, walletPath);//---for org2
 
         // in a real application this would be done on an administrative flow, and only once
         await enrollAdmin(caClient, wallet, mspOrg1);
-        //await enrollAdmin(caClient2, wallet2, mspOrg2);//---for org2
 
-        //creating app user
-        await registerAndEnrollUser(caClient, wallet, mspOrg1, org1UserId, 'org1.department1');
 
         // Create a new gateway instance for interacting with the fabric network.
         // In a real application this would be done as the backend server session is setup for
@@ -60,7 +50,7 @@ async function main() {
             // signed by this user using the credentials stored in the wallet.
             await gateway.connect(ccp, {
                 wallet,
-                identity: org1UserId,
+                identity: 'admin',
                 discovery: { enabled: true, asLocalhost: true } // using asLocalhost as this gateway is using a fabric network deployed locally
             });
 
@@ -81,7 +71,7 @@ async function main() {
 
             app.use(cookieParser());
             app.use(cors({
-                origin: "http://localhost:5000",
+                origin: "http://localhost:3000",
                 credentials: true
             }));
             app.use(express.urlencoded({ extended: false }));
@@ -96,7 +86,8 @@ async function main() {
                 try {
                     const userIdentity = await wallet.get(id);
                     if (userIdentity) {
-                        res.send("user id exists")
+                        res.send("user id exists");
+                        return;
                     } else {
                         await registerAndEnrollUser(caClient, wallet, mspOrg1, id, 'org1.department1');
                         let result = await patient.evaluateTransaction('CreatePatient', id, name, gender, email, phn);
@@ -147,6 +138,7 @@ async function main() {
                         let findUser = await patient.evaluateTransaction('FindPatient', pid);
                     } catch (error) {
                         res.status(404).send(error.toString());
+                        return;
                     }
                     let result = await contract.evaluateTransaction('CreatePrescription', id, pid, name, age, date, disease, medicine);
                     await contract.submitTransaction('CreatePrescription', id, pid, name, age, date, disease, medicine);
@@ -198,7 +190,7 @@ async function main() {
         } finally {
             // Disconnect from the gateway when the application is closing
             // This will close all connections to the network
-            // gateway.disconnect();
+             //gateway.disconnect();
         }
     } catch (error) {
         console.error(`******** FAILED to run the application: ${error}`);

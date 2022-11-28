@@ -13,7 +13,7 @@ const { buildCAClient, registerAndEnrollUser, enrollAdmin } = require('../../tes
 const { buildCCPOrg1, buildCCPOrg2, buildWallet } = require('../../test-application/javascript/AppUtil.js');
 
 const myChannel = 'mychannel';
-const myChaincodeName = 'private';
+const myChaincodeName = 'telemedicine';
 
 const memberAssetCollectionName = 'assetCollection';
 const org1PrivateCollectionName = 'Org1MSPPrivateCollection';
@@ -259,14 +259,14 @@ async function main() {
             result = await statefulTxn.submit();
 
             //Buyer can withdraw the Agreement, using DeleteTranferAgreement
-            /*statefulTxn = contractOrg2.createTransaction('DeleteTranferAgreement');
+            statefulTxn = contractOrg2.createTransaction('DeleteTranferAgreement');
             statefulTxn.setEndorsingOrganizations(mspOrg2);
             let dataForDeleteAgreement = { assetID: assetID1 };
             tmapData = Buffer.from(JSON.stringify(dataForDeleteAgreement));
             statefulTxn.setTransient({
                 agreement_delete: tmapData
             });
-            result = await statefulTxn.submit();*/
+            result = await statefulTxn.submit();
 
             console.log('\n**************** As Org1 Client ****************');
             // All members can send txn ReadTransferAgreement, set by Org2 above
@@ -341,10 +341,33 @@ async function main() {
             result = await contractOrg2.evaluateTransaction('ReadAssetPrivateDetails', org2PrivateCollectionName, assetID1);
             console.log(`<-- result: ${prettyJSONString(result.toString())}`);
             verifyAssetPrivateDetails(result, assetID1, 100);
+            
+            //---------mypart
+            const PORT = 5000;
+            const express = require('express');
+            //const cookieParser = require('cookie-parser');
+            //let cors = require('cors');
+            let app = express();
+
+            /*app.use(cookieParser());
+            app.use(cors({
+                origin: "http://localhost:5000",
+                credentials: true
+            }));*/
+            app.use(express.urlencoded({ extended: false }));
+            app.use(express.json());
+
+            app.get('/', function(req, res) {
+                res.send('Hello World!*****\n');
+            });
+            var server = app.listen(PORT, function() {
+                console.log(`server listening on port 5000`);
+            });
+            //-----------------mypartend
         } finally {
             // Disconnect from the gateway peer when all work for this client identity is complete
-            gatewayOrg1.disconnect();
-            gatewayOrg2.disconnect();
+            //gatewayOrg1.disconnect();
+            //gatewayOrg2.disconnect();
         }
     } catch (error) {
         console.error(`Error in transaction: ${error}`);
