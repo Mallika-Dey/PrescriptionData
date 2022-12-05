@@ -21,12 +21,14 @@ class Patient extends Contract {
             throw new Error(`The user ${id} already exists`);
         }
 
+        let txid = ctx.stub.getTxID();
         const user = {
             ID: id,
             Name: name,
             Gender: gender,
             Email: email,
             Phoneno: phn,
+            Txid: txid,
         };
         //we insert data in alphabetic order using 'json-stringify-deterministic' and 'sort-keys-recursive'
         await ctx.stub.putState(id, Buffer.from(stringify(sortKeysRecursive(user))));

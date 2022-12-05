@@ -1,0 +1,9 @@
+POST http://localhost:5000/validatePrescription
+Content-Type: application/json
+
+{
+     "id": "p4",
+     "did": "admin",
+     "tx_id": "23a55cd47a8fd70811697fd38108c0f60a6cd69af782b942dd6c7959f4a9046b"
+}
+

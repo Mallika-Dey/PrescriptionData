@@ -1,0 +1,8 @@
+POST http://localhost:5000/login
+Content-Type: application/json
+
+{
+     "userId": "p3",
+     "pKey": "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgPA0DrQMSZL1pRD97kO+8H7raXHVU5oTPpW3OefNT1FehRANCAAROxJPXoHpPkEHRiaqPH3nyN1ilwn4S8AiC33rYW4oQWKCU4Gy4sMyoBAc7lD73yNS4ozwjsR+nWeOFITuxLGnP"
+}
+
