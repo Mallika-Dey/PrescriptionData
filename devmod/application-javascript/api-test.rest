@@ -2,10 +2,10 @@ POST http://localhost:5000/registerpatient
 Content-Type: application/json
 
 {
-     "id": "p1",
-     "name": "Alice",
-     "gender": "F",
-     "email": "alice@gmail.com",
+     "id": "p3",
+     "name": "Bob",
+     "gender": "M",
+     "email": "bob@gmail.com",
      "phn": "02156874652"
 }
 

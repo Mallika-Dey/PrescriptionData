@@ -20,8 +20,9 @@ const walletPath = path.join(__dirname, 'wallet');
 const org1UserId = 'docOrg1';
 let identity = 'admin';
 
-//const { blockListener, contractListener } = require('./Listeners');
+const { blockListener, contractListener } = require('./Listeners');
 const { BlockDecoder } = require('fabric-common');
+const { ValidatePres } = require('fabric-common');
 
 function prettyJSONString(inputString) {
     return JSON.stringify(JSON.parse(inputString), null, 2);
@@ -47,6 +48,7 @@ async function main() {
         // In a real application this would be done as the backend server session is setup for
         // a user that has been verified.
         const gateway = new Gateway();
+        let Videntity = 'admin';
         //server start
 
         try {
@@ -60,7 +62,7 @@ async function main() {
                 discovery: { enabled: true, asLocalhost: true } // using asLocalhost as this gateway is using a fabric network deployed locally
             });
 
-            //console.log(gateway.identityContext.user._signingIdentity._signer);
+            const privateKey = gateway.identityContext.user._signingIdentity._signer._key;
             //const adminIdentity = gateway.getCurrentIdentity();
 
             // Build a network instance based on the channel where the smart contract is deployed
@@ -75,19 +77,16 @@ async function main() {
 
             //----------block---------
 
-            //let res = await blockContract.evaluateTransaction("GetBlockByNumber", channelName, '20');
-            let txId = '037aebd1bba9bb5de640cf525106db7238e1386e61e4887f1d83803c04ae50ce';
+            const userIdentity = await wallet.get(Videntity);
+
+            let certificate = userIdentity.credentials['certificate'];
+
+            let txId = '0bc2c5a49ab2fa535b5b0ea377b679dcdc9f23c528c845841c9051b2b6e65197';
             let getBlockByTX = await blockContract.evaluateTransaction("GetBlockByTxID", channelName, txId);
-            const resultJson = BlockDecoder.decode(getBlockByTX);
-            let rr =resultJson.data.data[0].signature;
-            //console.log(JSON.stringify(resultJson));
-            console.log(rr.toString('hex'));
+            const resultJson = BlockDecoder.decode(getBlockByTX, Videntity, certificate, privateKey, mspOrg1);
 
-            // const adminIdentity = gateway.getClient().getCertificateAuthority();
-            // const id = adminIdentity.getIdentity();
-            // console.log(id.getPublicKey());
+
             //--------endblock------------
-
 
 
             const PORT = 5000;
@@ -133,18 +132,27 @@ async function main() {
                 const { userId, pKey } = req.body;
 
                 try {
+
                     const FindUser = await wallet.get(userId);
-                    let privatekey = FindUser.credentials['privateKey'];
-                    privatekey = privatekey.replace(/-----BEGIN PRIVATE KEY-----/, '');
-                    privatekey = privatekey.replace(/-----END PRIVATE KEY-----/, '');
-                    privatekey = privatekey.replace(/[\r\n]/gm, '');
+                    if (FindUser) {
+                        let privatekey = FindUser.credentials['privateKey'];
+                        privatekey = privatekey.replace(/-----BEGIN PRIVATE KEY-----/, '');
+                        privatekey = privatekey.replace(/-----END PRIVATE KEY-----/, '');
+                        privatekey = privatekey.replace(/[\r\n]/gm, '');
+                        if (privatekey == pKey) {
 
-                    if (privatekey == pKey) {
-
-                        let result = await patient.evaluateTransaction('FindPatient', userId);
-                        res.cookie('user', result.toString(), { maxAge: 3500000, httpOnly: true });
-                        //identity = userId;
-                        res.send('Successfully logged in');
+                            /*await gateway.connect(ccp, {
+                                wallet,
+                                identity: userId,
+                                discovery: { enabled: true, asLocalhost: true } // using asLocalhost as this gateway is using a fabric network deployed locally
+                            });*/
+                            let result = await patient.evaluateTransaction('FindPatient', userId);
+                            res.cookie('user', result.toString(), { maxAge: 3500000, httpOnly: true });
+                            //identity = userId;
+                            res.send('Successfully logged in');
+                        } else {
+                            res.status(404).send('Pass not match')
+                        }
                     } else {
                         res.status(404).send('user not found');
                     }

@@ -14,7 +14,9 @@
     "author": "Hyperledger",
     "license": "Apache-2.0",
     "dependencies": {
+        "@hyperledger/fabric-protos": "^0.1.6",
         "body-parser": "^1.20.1",
+        "buffered-writer": "^0.2.3",
         "cookie-parser": "^1.4.6",
         "cors": "^2.8.5",
         "crypto-js": "^4.1.1",
@@ -23,12 +25,14 @@
         "fabric-client": "^1.4.20",
         "fabric-network": "^2.2.4",
         "helper": "0.0.13",
+        "jsrsasign": "^10.6.1",
+        "jsrsasign-util": "^1.0.5",
         "log4js": "^6.7.1",
         "secp256k1": "^4.0.3",
-        "sha256": "^0.2.0"
+        "sha256": "^0.2.0",
+        "winston": "^3.8.2"
     },
     "devDependencies": {
-        "eslint": "^7.32.0",
-        "nodemon": "^2.0.20"
+        "eslint": "^7.32.0"
     }
 }

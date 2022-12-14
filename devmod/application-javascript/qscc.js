@@ -1,5 +1,5 @@
 const elliptic = require('elliptic');
-const { KEYUTIL } = require('jsrsasign');
+const { KJUR, KEYUTIL } = require('jsrsasign');
 var EC = require('elliptic').ec;
 
 // Create and initialize EC context
@@ -9,11 +9,42 @@ var ec = new EC('secp256k1');
 // Generate keys
 var key = ec.genKeyPair();
 
-const privateKeyPEM = '-----BEGIN PRIVATE KEY-----\r\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgNcHL2g3b5Hls16g9\r\nzYej6teRBX7Inyj/8PP7vRdlRsqhRANCAASiRTsmswq2noGVHCL1E9+ULzdfOD4J\r\nCZHHZ42NkdSnxFAzDRRG2Kc00z9IqWV1hGTbNctbZ6TDHry4kN+hPmeh\r\n-----END PRIVATE KEY-----';
+const privateKeyPEM = '-----BEGIN PRIVATE KEY-----\r\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgnq6704+e9STj5HHr\r\n2d98sotJogSMS7XR95NaqjM13OyhRANCAASHCuRttj0Wo4OLY/lfUsim4VwBbBCk\r\ndG3SK298YajAkeaLnAJu45GQbzuXSZLBojcEdfC7rqyveGKCrD16ybb/\r\n-----END PRIVATE KEY-----';
 const { prvKeyHex } = KEYUTIL.getKey(privateKeyPEM);
-const pubkey = '04a2453b26b30ab69e81951c22f513df942f375f383e090991c7678d8d91d4a7c450330d1446d8a734d33f48a965758464db35cb5b67a4c31ebcb890dfa13e67a1' 
 
-console.log(prvKeyHex);
-var sig = "3045022100b7df4888094fc53f55c222c6081e5e1eeb2b6e4bd9e28abfc9ee56792799187a0220174cef8ce6c25cc9eb25f03e417cc86dbb897c97f1d2577e5afe86927497ddf8"
 
-console.log(key.verify(sig, pubkey));
+const cer = "-----BEGIN CERTIFICATE-----\nMIIB8zCCAZmgAwIBAgIUG+76VbOkXK5Q/vx1GrPxjAN2Tx0wCgYIKoZIzj0EAwIw\ncDELMAkGA1UEBhMCVVMxFzAVBgNVBAgTDk5vcnRoIENhcm9saW5hMQ8wDQYDVQQH\nEwZEdXJoYW0xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh\nLm9yZzEuZXhhbXBsZS5jb20wHhcNMjIxMjA5MTI0NjAwWhcNMjMxMjA5MTMwMDAw\nWjAhMQ8wDQYDVQQLEwZjbGllbnQxDjAMBgNVBAMTBWFkbWluMFkwEwYHKoZIzj0C\nAQYIKoZIzj0DAQcDQgAEhwrkbbY9FqODi2P5X1LIpuFcAWwQpHRt0itvfGGowJHm\ni5wCbuORkG87l0mSwaI3BHXwu66sr3higqw9esm2/6NgMF4wDgYDVR0PAQH/BAQD\nAgeAMAwGA1UdEwEB/wQCMAAwHQYDVR0OBBYEFDgbdVR1ruWU+FWTQErOi3siEsiT\nMB8GA1UdIwQYMBaAFLg4xu68i891LOd7fagWx7+pigIxMAoGCCqGSM49BAMCA0gA\nMEUCIQC5LW0RuAh8KfWQe2qO84+lMNX6xURO5ZaEV7JveAmCWwIgC4XDqx2jGzoL\nk0RGTlukn3DnXGnCZDkrWSLaCS2BPkc=\n-----END CERTIFICATE-----";
+const {pubKeyHex} = KEYUTIL.getKey(cer);
+
+
+const data = {"Email":"alice@gmail.com","Gender":"F","ID":"p1","Name":"Alice","Phoneno":"02156874652","Txid":"e1ec3833b48721017f4d23a82bcb8ecaedff2e74b8298bb4904ca5f8591e99c5"}
+
+// initialize
+//var sigValue = sig.sign()
+//console.log(sigValue)
+
+
+/*let signdata = require('./data/payload.txt').toBuffer();
+
+var sig2 = new KJUR.crypto.Signature({ "alg": "SHA256withECDSA" });
+sig2.init(cer);
+
+sig2.updateString(data)
+var isValid = sig2.verify(signdata)
+console.log(isValid)*/
+
+const crypto = require('crypto');
+
+const sign = crypto.createSign('SHA256');
+var usr ="aaa"
+sign.update(usr);
+sign.end();
+const signature = sign.sign(privateKeyPEM);
+console.log("signature");
+console.log(signature.toString('hex'));
+
+const verify = crypto.createVerify('SHA256');
+verify.update(usr);
+verify.end();
+const veritifation = verify.verify(cer, signature);
+console.log(veritifation)
