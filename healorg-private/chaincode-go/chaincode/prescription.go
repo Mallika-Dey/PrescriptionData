@@ -17,7 +17,7 @@ import (
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 )
 
-const presCollection = "assetCollection"
+const presCollection = "presCollection"
 const transferAgreementObjectType = "transferAgreement"
 
 // SmartContract of this fabric sample
@@ -37,15 +37,14 @@ type Prescription struct {
 	Date       string `json:"date"`
 	Symtomp    string `json:"symtomp"`
 	Disease    string `json:"disease"`
-	Medicine   string `json:"medicine"`
-	TxId       string `json:"txid"`
 }
 
 // AssetPrivateDetails describes details that are private to owners
 type PrescriptionPrivateDetails struct {
-	ID       string `json:"id"`
-	Medicine string `json:"medicine"`
-	TxId     string `json:"txid"`
+	ID        string `json:"id"`
+	Medicine  string `json:"medicine"`
+	TxId      string `json:"txid"`
+	Available int    `json:"available"` //available days
 }
 
 // Transfer prescription describes the doctor agreement returned by ReadTransferAgreement
@@ -54,7 +53,7 @@ type TransferAgreement struct {
 	RequestedDocID string `json:"requesteddocid"`
 }
 
-// CreateAsset creates a new asset by placing the main asset details in the assetCollection
+// CreateAsset creates a new asset by placing the main asset details in the presCollection
 // that can be read by both organizations. The appraisal value is stored in the owners org specific collection.
 func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInterface) error {
 
@@ -67,7 +66,7 @@ func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInt
 	transientAssetJSON, ok := transientMap["asset_properties"]
 	if !ok {
 		//log error to stdout
-		return fmt.Errorf("prescripton not found in the transient map input")
+		return fmt.Errorf("prescription not found in the transient map input")
 	}
 
 	type PrescriptionTransientInput struct {
@@ -81,52 +80,56 @@ func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInt
 		Symtomp    string `json:"symtomp"`
 		Disease    string `json:"disease"`
 		Medicine   string `json:"medicine"`
+		Available  int    `json:"available"`
 	}
 
-	var prescriptonInput PrescriptionTransientInput
-	err = json.Unmarshal(transientAssetJSON, &prescriptonInput)
+	var prescriptionInput PrescriptionTransientInput
+	err = json.Unmarshal(transientAssetJSON, &prescriptionInput)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal JSON: %v", err)
 	}
 
-	if len(prescriptonInput.Type) == 0 {
+	if len(prescriptionInput.Type) == 0 {
 		return fmt.Errorf("objectType field must be a non-empty string")
 	}
-	if len(prescriptonInput.ID) == 0 {
+	if len(prescriptionInput.ID) == 0 {
 		return fmt.Errorf("prescriptionID field must be a non-empty string")
 	}
-	if len(prescriptonInput.PID) == 0 {
+	if len(prescriptionInput.PID) == 0 {
 		return fmt.Errorf("patient id field must be a non-empty string")
 	}
-	if len(prescriptonInput.DoctorName) == 0 {
+	if len(prescriptionInput.DoctorName) == 0 {
 		return fmt.Errorf("doctor id field must be a non-empty string")
 	}
-	if len(prescriptonInput.Name) == 0 {
+	if len(prescriptionInput.Name) == 0 {
 		return fmt.Errorf("Name field must be a non-empty string")
 	}
-	if len(prescriptonInput.Age) == 0 {
+	if len(prescriptionInput.Age) == 0 {
 		return fmt.Errorf("Age field must be a non-empty string")
 	}
-	if len(prescriptonInput.Date) == 0 {
+	if len(prescriptionInput.Date) == 0 {
 		return fmt.Errorf("Date field must be a non-empty string")
 	}
-	if len(prescriptonInput.Symtomp) == 0 {
+	if len(prescriptionInput.Symtomp) == 0 {
 		return fmt.Errorf("Symtomp field must be a non-empty string")
 	}
-	if len(prescriptonInput.Disease) == 0 {
+	if len(prescriptionInput.Disease) == 0 {
 		return fmt.Errorf("Disease field must be a non-empty string")
 	}
-	if len(prescriptonInput.Medicine) == 0 {
+	if len(prescriptionInput.Medicine) == 0 {
 		return fmt.Errorf("Medicine field must be a non-empty string")
+	}
+	if prescriptionInput.Available <= 0 {
+		return fmt.Errorf("Available field must be a non-empty string")
 	}
 
 	// Check if asset already exists
-	prescriptonAsBytes, err := ctx.GetStub().GetPrivateData(presCollection, prescriptonInput.ID)
+	prescriptionAsBytes, err := ctx.GetStub().GetPrivateData(presCollection, prescriptionInput.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get prescription: %v", err)
-	} else if prescriptonAsBytes != nil {
-		fmt.Println("prescripton already exists: " + prescriptonInput.ID)
-		return fmt.Errorf("this prescripton already exists: " + prescriptonInput.ID)
+	} else if prescriptionAsBytes != nil {
+		fmt.Println("prescription already exists: " + prescriptionInput.ID)
+		return fmt.Errorf("this prescription already exists: " + prescriptionInput.ID)
 	}
 
 	// Get ID of submitting client identity
@@ -140,26 +143,24 @@ func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInt
 	// write private data from this peer.
 	err = verifyClientOrgMatchesPeerOrg(ctx)
 	if err != nil {
-		return fmt.Errorf("CreatePrescripton cannot be performed: Error %v", err)
+		return fmt.Errorf("Createprescription cannot be performed: Error %v", err)
 	}
 
 	// Make submitting client the owner
-	txix := ctx.GetStub().GetTxID()
-	prescripton := Prescripton{
-		Type:       prescriptonInput.Type,
-		ID:         prescriptonInput.ID,
-		PID:        prescriptonInput.PID,
+	txid := ctx.GetStub().GetTxID()
+	prescription := Prescription{
+		Type:       prescriptionInput.Type,
+		ID:         prescriptionInput.ID,
+		PID:        prescriptionInput.PID,
 		DocID:      clientID,
-		Name:       prescriptonInput.Name,
-		DoctorName: prescriptonInput.DoctorName,
-		Age:        prescriptonInput.Age,
-		Date:       prescriptonInput.Date,
-		Symtomp:    prescriptonInput.Symtomp,
-		Disease:    prescriptonInput.Disease,
-		Medicine:   prescriptonInput.Medicine,
-		TxId:       txid,
+		Name:       prescriptionInput.Name,
+		DoctorName: prescriptionInput.DoctorName,
+		Age:        prescriptionInput.Age,
+		Date:       prescriptionInput.Date,
+		Symtomp:    prescriptionInput.Symtomp,
+		Disease:    prescriptionInput.Disease,
 	}
-	presJSONasBytes, err := json.Marshal(prescripton)
+	presJSONasBytes, err := json.Marshal(prescription)
 	if err != nil {
 		return fmt.Errorf("failed to marshal prescription into JSON: %v", err)
 	}
@@ -167,21 +168,22 @@ func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInt
 	// Save asset to private data collection
 	// Typical logger, logs to stdout/file in the fabric managed docker container, running this chaincode
 	// Look for container name like dev-peer0.org1.example.com-{chaincodename_version}-xyz
-	log.Printf("CreateAsset Put: collection %v, ID %v, owner %v", presCollection, prescriptonInput.ID, clientID)
+	log.Printf("CreateAsset Put: collection %v, ID %v, owner %v", presCollection, prescriptionInput.ID, clientID)
 
-	err = ctx.GetStub().PutPrivateData(presCollection, prescriptonInput.ID, presJSONasBytes)
+	err = ctx.GetStub().PutPrivateData(presCollection, prescriptionInput.ID, presJSONasBytes)
 	if err != nil {
 		return fmt.Errorf("failed to put asset into private data collecton: %v", err)
 	}
 
 	// Save asset details to collection visible to owning organization
 	prescriptionPrivateDetails := PrescriptionPrivateDetails{
-		ID:       prescriptonInput.ID,
-		Medicine: prescriptonInput.Medicine,
-		TxId:     prescripton.txid,
+		ID:        prescriptionInput.ID,
+		Medicine:  prescriptionInput.Medicine,
+		TxId:      txid,
+		Available: prescriptionInput.Available,
 	}
 
-	PrescriptionPrivateDetailsAsBytes, err := json.Marshal(PrescriptionPrivateDetails) // marshal asset details to JSON
+	PrescriptionPrivateDetailsAsBytes, err := json.Marshal(prescriptionPrivateDetails) // marshal asset details to JSON
 	if err != nil {
 		return fmt.Errorf("failed to marshal into JSON: %v", err)
 	}
@@ -192,9 +194,9 @@ func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInt
 		return fmt.Errorf("failed to infer private collection name for the org: %v", err)
 	}
 
-	// Put asset appraised value into owners org specific private data collection
-	log.Printf("Put: collection %v, ID %v", orgCollection, prescriptonInput.ID)
-	err = ctx.GetStub().PutPrivateData(orgCollection, prescriptonInput.ID, PrescriptionPrivateDetailsAsBytes)
+	// Put asset Available value into owners org specific private data collection
+	log.Printf("Put: collection %v, ID %v", orgCollection, prescriptionInput.ID)
+	err = ctx.GetStub().PutPrivateData(orgCollection, prescriptionInput.ID, PrescriptionPrivateDetailsAsBytes)
 	if err != nil {
 		return fmt.Errorf("failed to put asset private details: %v", err)
 	}
@@ -236,12 +238,18 @@ func (s *SmartContract) AgreeToTransfer(ctx contractapi.TransactionContextInterf
 	if len(valueJSON.ID) == 0 {
 		return fmt.Errorf("assetID field must be a non-empty string")
 	}
-	if valueJSON.TxId <= 0 {
-		return fmt.Errorf("appraisedValue field must be a positive integer")
+	if len(valueJSON.Medicine) == 0 {
+		return fmt.Errorf("Medicine field must be a non-empty string")
+	}
+	if len(valueJSON.TxId) == 0 {
+		return fmt.Errorf("TxId field must be a non-empty string")
+	}
+	if valueJSON.Available <= 0 {
+		return fmt.Errorf("AvailableValue field must be a positive integer")
 	}
 
 	// Read prescription from the private data collection
-	prescription, err := s.ReadAsset(ctx, valueJSON.ID)
+	prescription, err := s.ReadPrescription(ctx, valueJSON.ID)
 	if err != nil {
 		return fmt.Errorf("error reading asset: %v", err)
 	}
@@ -317,7 +325,7 @@ func (s *SmartContract) TransferAsset(ctx contractapi.TransactionContextInterfac
 	}
 	log.Printf("TransferAsset: verify prescription exists ID %v", prescriptionTransferInput.ID)
 	// Read asset from the private data collection
-	prescription, err := s.ReadAsset(ctx, prescriptionTransferInput.ID)
+	prescription, err := s.ReadPrescription(ctx, prescriptionTransferInput.ID)
 	if err != nil {
 		return fmt.Errorf("error reading asset: %v", err)
 	}
@@ -331,7 +339,7 @@ func (s *SmartContract) TransferAsset(ctx contractapi.TransactionContextInterfac
 	}
 
 	// Verify transfer details and transfer owner
-	err = s.verifyAgreement(ctx, prescriptionTransferInput.ID, prescripton.DocID, prescriptionTransferInput.RequestedDocID)
+	err = s.verifyAgreement(ctx, prescriptionTransferInput.ID, prescription.DocID, prescriptionTransferInput.RequestedDocID)
 	if err != nil {
 		return fmt.Errorf("failed transfer verification: %v", err)
 	}
@@ -341,13 +349,13 @@ func (s *SmartContract) TransferAsset(ctx contractapi.TransactionContextInterfac
 		return fmt.Errorf("failed ReadTransferAgreement to find buyerID: %v", err)
 	}
 	if transferAgreement.RequestedDocID == "" {
-		return fmt.Errorf("Requested doctor id not found in TransferAgreement for %v", assetTransferInput.ID)
+		return fmt.Errorf("Requested doctor id not found in TransferAgreement for %v", prescriptionTransferInput.ID)
 	}
 
 	// Transfer asset in private data collection to new owner
 	prescription.DocID = transferAgreement.RequestedDocID
 
-	presJSONasBytes, err := json.Marshal(asset)
+	presJSONasBytes, err := json.Marshal(prescription)
 	if err != nil {
 		return fmt.Errorf("failed marshalling asset %v: %v", prescriptionTransferInput.ID, err)
 	}
@@ -364,7 +372,7 @@ func (s *SmartContract) TransferAsset(ctx contractapi.TransactionContextInterfac
 		return fmt.Errorf("failed to infer private collection name for the org: %v", err)
 	}
 
-	// Delete the asset appraised value from this organization's private data collection
+	// Delete the asset Available value from this organization's private data collection
 	err = ctx.GetStub().DelPrivateData(ownersCollection, prescriptionTransferInput.ID)
 	if err != nil {
 		return err
@@ -399,10 +407,10 @@ func (s *SmartContract) verifyAgreement(ctx contractapi.TransactionContextInterf
 	}
 
 	if clientID != docID {
-		return fmt.Errorf("error: submitting client identity does not own asset")
+		return fmt.Errorf("error: submitting client identity does not own prescription")
 	}
 
-	// Check 2: verify that the buyer has agreed to the appraised value
+	// Check 2: verify that the buyer has agreed to the Available value
 
 	// Get collection names
 	collectionOwner, err := getCollectionName(ctx) // get owner collection from caller identity
@@ -413,26 +421,26 @@ func (s *SmartContract) verifyAgreement(ctx contractapi.TransactionContextInterf
 	collectionBuyer := reqDocMSP + "PrivateCollection" // get buyers collection
 
 	// Get hash of owners agreed to value
-	ownerAppraisedValueHash, err := ctx.GetStub().GetPrivateDataHash(collectionOwner, assetID)
+	ownerAvailableValueHash, err := ctx.GetStub().GetPrivateDataHash(collectionOwner, prescriptionID)
 	if err != nil {
-		return fmt.Errorf("failed to get hash of appraised value from owners collection %v: %v", collectionOwner, err)
+		return fmt.Errorf("failed to get hash of Available value from owners collection %v: %v", collectionOwner, err)
 	}
-	if ownerAppraisedValueHash == nil {
-		return fmt.Errorf("hash of appraised value for %v does not exist in collection %v", assetID, collectionOwner)
+	if ownerAvailableValueHash == nil {
+		return fmt.Errorf("hash of Available value for %v does not exist in collection %v", prescriptionID, collectionOwner)
 	}
 
 	// Get hash of buyers agreed to value
-	buyerAppraisedValueHash, err := ctx.GetStub().GetPrivateDataHash(collectionBuyer, assetID)
+	buyerAvailableValueHash, err := ctx.GetStub().GetPrivateDataHash(collectionBuyer, prescriptionID)
 	if err != nil {
-		return fmt.Errorf("failed to get hash of appraised value from buyer collection %v: %v", collectionBuyer, err)
+		return fmt.Errorf("failed to get hash of Available value from buyer collection %v: %v", collectionBuyer, err)
 	}
-	if buyerAppraisedValueHash == nil {
-		return fmt.Errorf("hash of appraised value for %v does not exist in collection %v. AgreeToTransfer must be called by the buyer first", assetID, collectionBuyer)
+	if buyerAvailableValueHash == nil {
+		return fmt.Errorf("hash of Available value for %v does not exist in collection %v. AgreeToTransfer must be called by the buyer first", prescriptionID, collectionBuyer)
 	}
 
 	// Verify that the two hashes match
-	if !bytes.Equal(ownerAppraisedValueHash, buyerAppraisedValueHash) {
-		return fmt.Errorf("hash for appraised value for owner %x does not value for seller %x", ownerAppraisedValueHash, buyerAppraisedValueHash)
+	if !bytes.Equal(ownerAvailableValueHash, buyerAvailableValueHash) {
+		return fmt.Errorf("hash for Available value for owner %x does not value for seller %x", ownerAvailableValueHash, buyerAvailableValueHash)
 	}
 
 	return nil
@@ -449,21 +457,21 @@ func (s *SmartContract) DeleteAsset(ctx contractapi.TransactionContextInterface)
 	// Asset properties are private, therefore they get passed in transient field
 	transientDeleteJSON, ok := transientMap["asset_delete"]
 	if !ok {
-		return fmt.Errorf("asset to delete not found in the transient map")
+		return fmt.Errorf("prescription to delete not found in the transient map")
 	}
 
-	type assetDelete struct {
-		ID string `json:"assetID"`
+	type prescriptionDelete struct {
+		ID string `json:"prescriptionID"`
 	}
 
-	var assetDeleteInput assetDelete
-	err = json.Unmarshal(transientDeleteJSON, &assetDeleteInput)
+	var prescriptionDeleteInput prescriptionDelete
+	err = json.Unmarshal(transientDeleteJSON, &prescriptionDeleteInput)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal JSON: %v", err)
 	}
 
-	if len(assetDeleteInput.ID) == 0 {
-		return fmt.Errorf("assetID field must be a non-empty string")
+	if len(prescriptionDeleteInput.ID) == 0 {
+		return fmt.Errorf("prescriptionID field must be a non-empty string")
 	}
 
 	// Verify that the client is submitting request to peer in their organization
@@ -472,13 +480,13 @@ func (s *SmartContract) DeleteAsset(ctx contractapi.TransactionContextInterface)
 		return fmt.Errorf("DeleteAsset cannot be performed: Error %v", err)
 	}
 
-	log.Printf("Deleting Asset: %v", assetDeleteInput.ID)
-	valAsbytes, err := ctx.GetStub().GetPrivateData(assetCollection, assetDeleteInput.ID) //get the asset from chaincode state
+	log.Printf("Deleting Asset: %v", prescriptionDeleteInput.ID)
+	valAsbytes, err := ctx.GetStub().GetPrivateData(presCollection, prescriptionDeleteInput.ID) //get the asset from chaincode state
 	if err != nil {
-		return fmt.Errorf("failed to read asset: %v", err)
+		return fmt.Errorf("failed to read prescription: %v", err)
 	}
 	if valAsbytes == nil {
-		return fmt.Errorf("asset not found: %v", assetDeleteInput.ID)
+		return fmt.Errorf("prescription not found: %v", prescriptionDeleteInput.ID)
 	}
 
 	ownerCollection, err := getCollectionName(ctx) // Get owners collection
@@ -487,22 +495,22 @@ func (s *SmartContract) DeleteAsset(ctx contractapi.TransactionContextInterface)
 	}
 
 	//check the asset is in the caller org's private collection
-	valAsbytes, err = ctx.GetStub().GetPrivateData(ownerCollection, assetDeleteInput.ID)
+	valAsbytes, err = ctx.GetStub().GetPrivateData(ownerCollection, prescriptionDeleteInput.ID)
 	if err != nil {
-		return fmt.Errorf("failed to read asset from owner's Collection: %v", err)
+		return fmt.Errorf("failed to read prescription from owner's Collection: %v", err)
 	}
 	if valAsbytes == nil {
-		return fmt.Errorf("asset not found in owner's private Collection %v: %v", ownerCollection, assetDeleteInput.ID)
+		return fmt.Errorf("prescription not found in owner's private Collection %v: %v", ownerCollection, prescriptionDeleteInput.ID)
 	}
 
 	// delete the asset from state
-	err = ctx.GetStub().DelPrivateData(assetCollection, assetDeleteInput.ID)
+	err = ctx.GetStub().DelPrivateData(presCollection, prescriptionDeleteInput.ID)
 	if err != nil {
 		return fmt.Errorf("failed to delete state: %v", err)
 	}
 
 	// Finally, delete private details of asset
-	err = ctx.GetStub().DelPrivateData(ownerCollection, assetDeleteInput.ID)
+	err = ctx.GetStub().DelPrivateData(ownerCollection, prescriptionDeleteInput.ID)
 	if err != nil {
 		return err
 	}
@@ -523,20 +531,20 @@ func (s *SmartContract) DeleteTranferAgreement(ctx contractapi.TransactionContex
 	// Asset properties are private, therefore they get passed in transient field
 	transientDeleteJSON, ok := transientMap["agreement_delete"]
 	if !ok {
-		return fmt.Errorf("asset to delete not found in the transient map")
+		return fmt.Errorf("prescription to delete not found in the transient map")
 	}
 
-	type assetDelete struct {
-		ID string `json:"assetID"`
+	type prescriptionDelete struct {
+		ID string `json:"prescriptionID"`
 	}
 
-	var assetDeleteInput assetDelete
-	err = json.Unmarshal(transientDeleteJSON, &assetDeleteInput)
+	var prescriptionDeleteInput prescriptionDelete
+	err = json.Unmarshal(transientDeleteJSON, &prescriptionDeleteInput)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal JSON: %v", err)
 	}
 
-	if len(assetDeleteInput.ID) == 0 {
+	if len(prescriptionDeleteInput.ID) == 0 {
 		return fmt.Errorf("transient input ID field must be a non-empty string")
 	}
 
@@ -550,28 +558,28 @@ func (s *SmartContract) DeleteTranferAgreement(ctx contractapi.TransactionContex
 	if err != nil {
 		return fmt.Errorf("failed to infer private collection name for the org: %v", err)
 	}
-	tranferAgreeKey, err := ctx.GetStub().CreateCompositeKey(transferAgreementObjectType, []string{assetDeleteInput.
+	tranferAgreeKey, err := ctx.GetStub().CreateCompositeKey(transferAgreementObjectType, []string{prescriptionDeleteInput.
 		ID}) // Create composite key
 	if err != nil {
 		return fmt.Errorf("failed to create composite key: %v", err)
 	}
 
-	valAsbytes, err := ctx.GetStub().GetPrivateData(assetCollection, tranferAgreeKey) //get the transfer_agreement
+	valAsbytes, err := ctx.GetStub().GetPrivateData(presCollection, tranferAgreeKey) //get the transfer_agreement
 	if err != nil {
 		return fmt.Errorf("failed to read transfer_agreement: %v", err)
 	}
 	if valAsbytes == nil {
-		return fmt.Errorf("asset's transfer_agreement does not exist: %v", assetDeleteInput.ID)
+		return fmt.Errorf("asset's transfer_agreement does not exist: %v", prescriptionDeleteInput.ID)
 	}
 
-	log.Printf("Deleting TranferAgreement: %v", assetDeleteInput.ID)
-	err = ctx.GetStub().DelPrivateData(orgCollection, assetDeleteInput.ID) // Delete the asset
+	log.Printf("Deleting TranferAgreement: %v", prescriptionDeleteInput.ID)
+	err = ctx.GetStub().DelPrivateData(orgCollection, prescriptionDeleteInput.ID) // Delete the asset
 	if err != nil {
 		return err
 	}
 
 	// Delete transfer agreement record
-	err = ctx.GetStub().DelPrivateData(assetCollection, tranferAgreeKey) // remove agreement from state
+	err = ctx.GetStub().DelPrivateData(presCollection, tranferAgreeKey) // remove agreement from state
 	if err != nil {
 		return err
 	}

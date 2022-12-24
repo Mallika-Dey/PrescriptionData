@@ -20,27 +20,32 @@ import (
 /*
 For details on generating the mocks, see comments in the file asset_transfer_test.go
 */
-func TestReadAsset(t *testing.T) {
+func TestReadPrescription(t *testing.T) {
 	transactionContext, chaincodeStub := prepMocksAsOrg1()
 	assetTransferCC := chaincode.SmartContract{}
 
-	assetBytes, err := assetTransferCC.ReadAsset(transactionContext, "id1")
+	assetBytes, err := assetTransferCC.ReadPrescription(transactionContext, "pres1")
 	require.NoError(t, err)
 	require.Nil(t, assetBytes)
 
 	chaincodeStub.GetPrivateDataReturns(nil, fmt.Errorf("unable to retrieve asset"))
-	assetBytes, err = assetTransferCC.ReadAsset(transactionContext, "id1")
+	assetBytes, err = assetTransferCC.ReadPrescription(transactionContext, "pres1")
 	require.EqualError(t, err, "failed to read asset: unable to retrieve asset")
 
-	testAsset := &chaincode.Asset{
-		ID:    "id1",
-		Type:  "testfulasset",
-		Color: "gray",
-		Size:  7,
-		Owner: myOrg1Clientid,
+	testAsset := &chaincode.Prescription{
+		Type:       "testfulasset",
+		ID:         "pres1",
+		PID:        "p1",
+		DocID:      myOrg1Clientid,
+		Name:       "Mallika Dey",
+		DoctorName: "Dr. Robert",
+		Age:        "22",
+		Date:       "23.12.2022",
+		Symtomp:    "high temparature",
+		Disease:    "fever",
 	}
 	setReturnPrivateDataInStub(t, chaincodeStub, testAsset)
-	assetRead, err := assetTransferCC.ReadAsset(transactionContext, "id1")
+	assetRead, err := assetTransferCC.ReadPrescription(transactionContext, "pres1")
 	require.NoError(t, err)
 	require.Equal(t, testAsset, assetRead)
 }
@@ -49,21 +54,23 @@ func TestReadAssetPrivateDetails(t *testing.T) {
 	transactionContext, chaincodeStub := prepMocksAsOrg1()
 	assetTransferCC := chaincode.SmartContract{}
 
-	assetBytes, err := assetTransferCC.ReadAssetPrivateDetails(transactionContext, myOrg1PrivCollection, "id1")
+	assetBytes, err := assetTransferCC.ReadAssetPrivateDetails(transactionContext, myOrg1PrivCollection, "pres1")
 	require.NoError(t, err)
 	require.Nil(t, assetBytes)
 
 	//read from the collection with no access
 	chaincodeStub.GetPrivateDataReturns(nil, fmt.Errorf("collection not found"))
-	assetBytes, err = assetTransferCC.ReadAssetPrivateDetails(transactionContext, myOrg2PrivCollection, "id1")
+	assetBytes, err = assetTransferCC.ReadAssetPrivateDetails(transactionContext, myOrg2PrivCollection, "pres1")
 	require.EqualError(t, err, "failed to read asset details: collection not found")
 
-	returnPrivData := &chaincode.AssetPrivateDetails{
-		ID:             "id1",
-		AppraisedValue: 5,
+	returnPrivData := &chaincode.PrescriptionPrivateDetails{
+		ID:        "pres1",
+		Medicine:  "napa",
+		TxId:      "JKiyuyhhn",
+		Available: 5,
 	}
 	setReturnAssetPrivateDetailsInStub(t, chaincodeStub, returnPrivData)
-	assetRead, err := assetTransferCC.ReadAssetPrivateDetails(transactionContext, myOrg1PrivCollection, "id1")
+	assetRead, err := assetTransferCC.ReadAssetPrivateDetails(transactionContext, myOrg1PrivCollection, "pres1")
 	require.NoError(t, err)
 	require.Equal(t, returnPrivData, assetRead)
 }
@@ -73,7 +80,7 @@ func TestReadTransferAgreement(t *testing.T) {
 	assetTransferCC := chaincode.SmartContract{}
 
 	//TransferAgreement does not exist
-	assetBytes, err := assetTransferCC.ReadTransferAgreement(transactionContext, "id1")
+	assetBytes, err := assetTransferCC.ReadTransferAgreement(transactionContext, "pres1")
 	require.NoError(t, err)
 	require.Nil(t, assetBytes)
 
@@ -82,7 +89,7 @@ func TestReadTransferAgreement(t *testing.T) {
 		ID:      "id1",
 		BuyerID: myOrg2Clientid,
 	}
-	dataRead, err := assetTransferCC.ReadTransferAgreement(transactionContext, "id1")
+	dataRead, err := assetTransferCC.ReadTransferAgreement(transactionContext, "pres1")
 	require.NoError(t, err)
 	require.Equal(t, expectedData, dataRead)
 }
@@ -90,7 +97,18 @@ func TestReadTransferAgreement(t *testing.T) {
 func TestQueryAssetByOwner(t *testing.T) {
 	transactionContext, chaincodeStub := prepMocksAsOrg1()
 
-	asset := &chaincode.Asset{Type: "valuableasset", ID: "asset1", Owner: "user1"}
+	asset := &chaincode.Prescription{
+		Type:       "valuableasset",
+		ID:         "asset1",
+		PID:        "p1",
+		DocID:      "user1",
+		Name:       "Preeti",
+		DoctorName: "Dr. Robert",
+		Age:        "22",
+		Date:       "23.12.2022",
+		Symtomp:    "high temparature",
+		Disease:    "fever",
+	}
 	asset1Bytes, err := json.Marshal(asset)
 	require.NoError(t, err)
 
@@ -103,7 +121,7 @@ func TestQueryAssetByOwner(t *testing.T) {
 	assetTransferCC := &chaincode.SmartContract{}
 	assets, err := assetTransferCC.QueryAssetByOwner(transactionContext, "valuableasset", "user1")
 	require.NoError(t, err)
-	require.Equal(t, []*chaincode.Asset{asset}, assets)
+	require.Equal(t, []*chaincode.Prescription{asset}, assets)
 
 	iterator.HasNextReturns(true)
 	iterator.NextReturns(nil, fmt.Errorf("failed retrieving next item"))
@@ -123,7 +141,7 @@ func TestQueryAssets(t *testing.T) {
 	assetTransferCC := &chaincode.SmartContract{}
 	assets, err := assetTransferCC.QueryAssets(transactionContext, "querystr")
 	require.NoError(t, err)
-	require.Equal(t, []*chaincode.Asset{}, assets)
+	require.Equal(t, []*chaincode.Prescription{}, assets)
 
 	iterator = &mocks.StateQueryIterator{}
 	chaincodeStub.GetPrivateDataQueryResultReturns(iterator, nil)
@@ -133,7 +151,18 @@ func TestQueryAssets(t *testing.T) {
 	require.EqualError(t, err, "failed retrieving next item")
 	require.Nil(t, assets)
 
-	asset := &chaincode.Asset{Type: "valuableasset", ID: "asset1", Owner: "user1"}
+	asset := &chaincode.Prescription{
+		Type:       "valuableasset",
+		ID:         "asset1",
+		PID:        "p1",
+		DocID:      "user1",
+		Name:       "Preeti",
+		DoctorName: "Dr. Robert",
+		Age:        "22",
+		Date:       "23.12.2022",
+		Symtomp:    "high temparature",
+		Disease:    "fever",
+	}
 	asset1Bytes, err := json.Marshal(asset)
 	require.NoError(t, err)
 
@@ -145,7 +174,7 @@ func TestQueryAssets(t *testing.T) {
 
 	assets, err = assetTransferCC.QueryAssets(transactionContext, "querystr")
 	require.NoError(t, err)
-	require.Equal(t, []*chaincode.Asset{asset}, assets)
+	require.Equal(t, []*chaincode.Prescription{asset}, assets)
 }
 
 func TestGetAssetByRange(t *testing.T) {
@@ -158,7 +187,7 @@ func TestGetAssetByRange(t *testing.T) {
 	assetTransferCC := &chaincode.SmartContract{}
 	assets, err := assetTransferCC.GetAssetByRange(transactionContext, "st", "end")
 	require.NoError(t, err)
-	require.Equal(t, []*chaincode.Asset{}, assets)
+	require.Equal(t, []*chaincode.Prescription{}, assets)
 
 	iterator = &mocks.StateQueryIterator{}
 	chaincodeStub.GetPrivateDataByRangeReturns(iterator, nil)
@@ -168,7 +197,18 @@ func TestGetAssetByRange(t *testing.T) {
 	require.EqualError(t, err, "failed retrieving next item")
 	require.Nil(t, assets)
 
-	asset := &chaincode.Asset{Type: "valuableasset", ID: "asset1", Owner: "user1"}
+	asset := &chaincode.Prescription{
+		Type:       "valuableasset",
+		ID:         "asset1",
+		PID:        "p1",
+		DocID:      "user1",
+		Name:       "Preeti",
+		DoctorName: "Dr. Robert",
+		Age:        "22",
+		Date:       "23.12.2022",
+		Symtomp:    "high temparature",
+		Disease:    "fever",
+	}
 	asset1Bytes, err := json.Marshal(asset)
 	require.NoError(t, err)
 
@@ -180,6 +220,6 @@ func TestGetAssetByRange(t *testing.T) {
 
 	assets, err = assetTransferCC.GetAssetByRange(transactionContext, "st", "end")
 	require.NoError(t, err)
-	require.Equal(t, []*chaincode.Asset{asset}, assets)
+	require.Equal(t, []*chaincode.Prescription{asset}, assets)
 
 }
