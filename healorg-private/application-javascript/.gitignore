@@ -12,5 +12,3 @@ package-lock.json
 
 wallet.org1
 wallet.org2
-!wallet.org1/.gitkeep
-!wallet.org2/.gitkeep

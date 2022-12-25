@@ -52,7 +52,7 @@ Like other samples, the Fabric test network is used to deploy and run this sampl
    ./network.sh deployCC -ccn private -ccp ../asset-transfer-private-data/chaincode-java  -ccl java -ccep "OR('Org1MSP.peer','Org2MSP.peer')"  -cccg '../asset-transfer-private-data/chaincode-java/collections_config.json' -ccep "OR('Org1MSP.peer','Org2MSP.peer')"
 
    # To deploy the go chaincode implementation
-   ./network.sh deployCC -ccn private -ccp ../healorg-private/chaincode-go  -ccl go -ccep "OR('Org1MSP.peer','Org2MSP.peer')"  -cccg '../healorg-private/chaincode-go/collections_config.json' -ccep "OR('Org1MSP.peer','Org2MSP.peer')"
+   ./network.sh deployCC -ccn telemedicine -ccp ../healorg-private/chaincode-go  -ccl go -ccep "OR('Org1MSP.peer','Org2MSP.peer')"  -cccg '../healorg-private/chaincode-go/collections_config.json' -ccep "OR('Org1MSP.peer','Org2MSP.peer')"
    ```
 
 3. Run the application (from the `asset-transfer-private-data` folder).

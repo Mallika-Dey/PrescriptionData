@@ -50,7 +50,7 @@ type PrescriptionPrivateDetails struct {
 // Transfer prescription describes the doctor agreement returned by ReadTransferAgreement
 type TransferAgreement struct {
 	ID             string `json:"id"`
-	RequestedDocID string `json:"requesteddocid"`
+	RequestedDocID string `json:"requestedDocID"`
 }
 
 // CreateAsset creates a new asset by placing the main asset details in the presCollection
@@ -307,8 +307,8 @@ func (s *SmartContract) TransferAsset(ctx contractapi.TransactionContextInterfac
 	}
 
 	type prescriptionTransferTransientInput struct {
-		ID             string `json:"id"`
-		RequestedDocID string `json:"requesteddocid"`
+		ID           string `json:"id"`
+		RequestedMSP string `json:"requestedMSP"`
 	}
 
 	var prescriptionTransferInput prescriptionTransferTransientInput
@@ -320,7 +320,7 @@ func (s *SmartContract) TransferAsset(ctx contractapi.TransactionContextInterfac
 	if len(prescriptionTransferInput.ID) == 0 {
 		return fmt.Errorf("assetID field must be a non-empty string")
 	}
-	if len(prescriptionTransferInput.RequestedDocID) == 0 {
+	if len(prescriptionTransferInput.RequestedMSP) == 0 {
 		return fmt.Errorf("Requested Doctor id field must be a non-empty string")
 	}
 	log.Printf("TransferAsset: verify prescription exists ID %v", prescriptionTransferInput.ID)
@@ -339,7 +339,7 @@ func (s *SmartContract) TransferAsset(ctx contractapi.TransactionContextInterfac
 	}
 
 	// Verify transfer details and transfer owner
-	err = s.verifyAgreement(ctx, prescriptionTransferInput.ID, prescription.DocID, prescriptionTransferInput.RequestedDocID)
+	err = s.verifyAgreement(ctx, prescriptionTransferInput.ID, prescription.DocID, prescriptionTransferInput.RequestedMSP)
 	if err != nil {
 		return fmt.Errorf("failed transfer verification: %v", err)
 	}
@@ -349,7 +349,7 @@ func (s *SmartContract) TransferAsset(ctx contractapi.TransactionContextInterfac
 		return fmt.Errorf("failed ReadTransferAgreement to find buyerID: %v", err)
 	}
 	if transferAgreement.RequestedDocID == "" {
-		return fmt.Errorf("Requested doctor id not found in TransferAgreement for %v", prescriptionTransferInput.ID)
+		return fmt.Errorf("Requested ID not found in TransferAgreement for %v", prescriptionTransferInput.ID)
 	}
 
 	// Transfer asset in private data collection to new owner

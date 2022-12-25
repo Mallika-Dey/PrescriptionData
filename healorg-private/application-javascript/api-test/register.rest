@@ -1,0 +1,12 @@
+POST http://localhost:5000/registeruser
+Content-Type: application/json
+
+{
+     "id": "doc1",
+     "name": "Bob",
+     "gender": "M",
+     "email": "bob@gmail.com",
+     "phn": "02156874652",
+     "usertype": "doctor",
+     "org": "Org1MSP"
+}

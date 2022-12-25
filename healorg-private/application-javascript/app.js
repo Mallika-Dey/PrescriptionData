@@ -22,6 +22,9 @@ const mspOrg1 = 'Org1MSP';
 const mspOrg2 = 'Org2MSP';
 const Org1UserId = 'appUser1';
 const Org2UserId = 'appUser2';
+const departmentOrg1 = 'org1.department1';
+const departmentOrg2 = 'org2.department1';
+
 
 const RED = '\x1b[31m\n';
 const RESET = '\x1b[0m';
@@ -96,73 +99,58 @@ function verifyAssetPrivateDetails(resultBuffer, expectedId, available) {
     }
 }
 
-async function initContractFromOrg1Identity() {
+async function gatewayConnect(ccpOrg, walletOrg, OrgUserId, gateway) {
+    await gateway.connect(ccpOrg, { wallet: walletOrg, identity: OrgUserId, discovery: { enabled: true, asLocalhost: true } });
+    return gateway;
+}
+
+async function registerUser(caOrgClient, walletOrg, mspOrg, OrgUserId, department) {
+    await registerAndEnrollUser(caOrgClient, walletOrg, mspOrg, OrgUserId, department);
+}
+
+async function initContractFromOrg1Identity(ccpOrg1, caOrg1Client, walletOrg1) {
     console.log('\n--> Fabric client user & Gateway init: Using Org1 identity to Org1 Peer');
-    // build an in memory object with the network configuration (also known as a connection profile)
-    const ccpOrg1 = buildCCPOrg1();
 
-    // build an instance of the fabric ca services client based on
-    // the information in the network configuration
-    const caOrg1Client = buildCAClient(FabricCAServices, ccpOrg1, 'ca.org1.example.com');
-
-    // setup the wallet to cache the credentials of the application user, on the app server locally
-    const walletPathOrg1 = path.join(__dirname, 'wallet/org1');
-    const walletOrg1 = await buildWallet(Wallets, walletPathOrg1);
-
-    // in a real application this would be done on an administrative flow, and only once
-    // stores admin identity in local wallet, if needed
     await enrollAdmin(caOrg1Client, walletOrg1, mspOrg1);
-    // register & enroll application user with CA, which is used as client identify to make chaincode calls
-    // and stores app user identity in local wallet
-    // In a real application this would be done only when a new user was required to be added
-    // and would be part of an administrative flow
-    await registerAndEnrollUser(caOrg1Client, walletOrg1, mspOrg1, Org1UserId, 'org1.department1');
 
     try {
-        // Create a new gateway for connecting to Org's peer node.
         const gatewayOrg1 = new Gateway();
-        //connect using Discovery enabled
-        await gatewayOrg1.connect(ccpOrg1, { wallet: walletOrg1, identity: Org1UserId, discovery: { enabled: true, asLocalhost: true } });
-
-        return gatewayOrg1;
+        return gatewayConnect(ccpOrg1, walletOrg1, 'admin', gatewayOrg1);
     } catch (error) {
         console.error(`Error in connecting to gateway: ${error}`);
         process.exit(1);
     }
 }
 
-async function initContractFromOrg2Identity() {
+async function initContractFromOrg2Identity(ccpOrg2, caOrg2Client, walletOrg2) {
     console.log('\n--> Fabric client user & Gateway init: Using Org2 identity to Org2 Peer');
-    const ccpOrg2 = buildCCPOrg2();
-    const caOrg2Client = buildCAClient(FabricCAServices, ccpOrg2, 'ca.org2.example.com');
-
-    const walletPathOrg2 = path.join(__dirname, 'wallet/org2');
-    const walletOrg2 = await buildWallet(Wallets, walletPathOrg2);
 
     await enrollAdmin(caOrg2Client, walletOrg2, mspOrg2);
-    await registerAndEnrollUser(caOrg2Client, walletOrg2, mspOrg2, Org2UserId, 'org2.department1');
 
     try {
         // Create a new gateway for connecting to Org's peer node.
         const gatewayOrg2 = new Gateway();
-        await gatewayOrg2.connect(ccpOrg2, { wallet: walletOrg2, identity: Org2UserId, discovery: { enabled: true, asLocalhost: true } });
-
-        return gatewayOrg2;
+        return gatewayConnect(ccpOrg2, walletOrg2, 'admin', gatewayOrg2);
     } catch (error) {
         console.error(`Error in connecting to gateway: ${error}`);
         process.exit(1);
     }
 }
 
-// Main workflow : usecase details at asset-transfer-private-data/chaincode-go/README.md
-// This app uses fabric-samples/test-network based setup and the companion chaincode
-// For this usecase illustration, we will use both Org1 & Org2 client identity from this same app
-// In real world the Org1 & Org2 identity will be used in different apps to achieve asset transfer.
 async function main() {
     try {
 
-        /** ******* Fabric client init: Using Org1 identity to Org1 Peer ********** */
-        const gatewayOrg1 = await initContractFromOrg1Identity();
+        const ccpOrg1 = buildCCPOrg1();
+        const caOrg1Client = buildCAClient(FabricCAServices, ccpOrg1, 'ca.org1.example.com');
+        const walletPathOrg1 = path.join(__dirname, 'wallet/org1');
+        const walletOrg1 = await buildWallet(Wallets, walletPathOrg1);
+
+        const ccpOrg2 = buildCCPOrg2();
+        const caOrg2Client = buildCAClient(FabricCAServices, ccpOrg2, 'ca.org2.example.com');
+        const walletPathOrg2 = path.join(__dirname, 'wallet/org2');
+        const walletOrg2 = await buildWallet(Wallets, walletPathOrg2);
+
+        const gatewayOrg1 = await initContractFromOrg1Identity(ccpOrg1, caOrg1Client, walletOrg1);
         const networkOrg1 = await gatewayOrg1.getNetwork(myChannel);
         const contractOrg1 = networkOrg1.getContract(myChaincodeName);
         // Since this sample chaincode uses, Private Data Collection level endorsement policy, addDiscoveryInterest
@@ -170,51 +158,74 @@ async function main() {
         contractOrg1.addDiscoveryInterest({ name: myChaincodeName, collectionNames: [memberAssetCollectionName, org1PrivateCollectionName] });
 
         /** ~~~~~~~ Fabric client init: Using Org2 identity to Org2 Peer ~~~~~~~ */
-        const gatewayOrg2 = await initContractFromOrg2Identity();
+        const gatewayOrg2 = await initContractFromOrg2Identity(ccpOrg2, caOrg2Client, walletOrg2);
         const networkOrg2 = await gatewayOrg2.getNetwork(myChannel);
         const contractOrg2 = networkOrg2.getContract(myChaincodeName);
         contractOrg2.addDiscoveryInterest({ name: myChaincodeName, collectionNames: [memberAssetCollectionName, org2PrivateCollectionName] });
+
+
         try {
 
             const PORT = 5000;
             const express = require('express');
-            const cookieParser = require('cookie-parser');
-            let cors = require('cors');
+            /*const cookieParser = require('cookie-parser');
+            let cors = require('cors');*/
             let app = express();
-            app.use(cookieParser());
+            /*app.use(cookieParser());
             app.use(cors({
                 origin: "http://localhost:3000",
                 credentials: true
-            }));
+            }));*/
             app.use(express.urlencoded({ extended: false }));
             app.use(express.json());
-
 
             app.get('/', function(req, res) {
                 res.send('Hello World!*****\n');
             });
 
-            app.post('/registerpatient', async function(req, res) {
-                const { id, name, gender, email, phn, org } = req.body;
+            const assetType = 'ValuableAsset';
+
+            app.post('/registeruser', async function(req, res) {
+                const { id, name, gender, email, phn, usertype, org } = req.body;
+                const user = {
+                    objectType: assetType,
+                    ID: id,
+                    Name: name,
+                    Gender: gender,
+                    Email: email,
+                    PhoneNo: phn,
+                    UserType: usertype
+                }
+
                 try {
-                    const userIdentity;
+                    let userIdentity;
+                    let result;
+                    let tmapData = Buffer.from(JSON.stringify(user));
                     if (org == mspOrg1) {
                         userIdentity = await walletOrg1.get(id);
                     } else {
-                        userIdentity = await walletOrg1.get(id);
+                        userIdentity = await walletOrg2.get(id);
                     }
                     if (userIdentity) {
                         res.send(`user id exists in ${org}`);
                         return;
                     } else {
                         if (org == mspOrg1) {
-                            let result = await contractOrg1.evaluateTransaction('CreatePatient', id, name, gender, email, phn);
-                            await contractOrg1.submitTransaction('CreatePatient', id, name, gender, email, phn);
-                            await registerAndEnrollUser(caClient, walletOrg1, mspOrg1, id, 'org1.department1');
+                            console.log("**********hoy nai");
+                            let statefulTxn = contractOrg1.createTransaction('CreateUser');
+                            statefulTxn.setTransient({
+                                asset_properties: tmapData
+                            });
+                            result = await statefulTxn.submit();
+                            console.log("---------hocche");
+                            await registerUser(caOrg1Client, walletOrg1, mspOrg1, id, departmentOrg1);
                         } else {
-                            let result = await contractOrg2.evaluateTransaction('CreatePatient', id, name, gender, email, phn);
-                            await contractOrg2.submitTransaction('CreatePatient', id, name, gender, email, phn);
-                            await registerAndEnrollUser(caClient, walletOrg2, mspOrg2, id, 'org2.department1');
+                            let statefulTxn = contractOrg2.createTransaction('CreateUser');
+                            statefulTxn.setTransient({
+                                asset_properties: tmapData
+                            });
+                            result = await statefulTxn.submit();
+                            await registerUser(caOrg2Client, walletOrg2, mspOrg2, id, departmentOrg2);
                         }
                         res.send(result.toString());
                     }
@@ -224,9 +235,12 @@ async function main() {
 
             });
 
+            var server = app.listen(PORT, function() {
+                console.log(`server listening on port 5000`);
+            });
+
             let assetID1 = "pres1";
             let assetID2 = `pres2`;
-            const assetType = 'ValuableAsset';
             // let result;
             /*let asset1Data = {
                 objectType: assetType,
@@ -238,19 +252,6 @@ async function main() {
                 Date: "23.12.2022",
                 Symtomp: "high temparature",
                 Disease: "fever",
-                Medicine: "napa",
-                Available: 5
-            };
-            let asset2Data = {
-                objectType: assetType,
-                ID: assetID2,
-                PID: "p2",
-                Name: "Lipa",
-                DoctorName: "Dr. Martin",
-                Age: "12",
-                Date: "21.12.2022",
-                Symtomp: "Allergy",
-                Disease: "Chiken Pox",
                 Medicine: "napa",
                 Available: 5
             };
