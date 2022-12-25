@@ -10,5 +10,4 @@ node_modules/
 jspm_packages/
 package-lock.json
 
-wallet.org1
-wallet.org2
+wallet
