@@ -6,6 +6,7 @@ Content-Type: application/json
      "name": "Bob",
      "gender": "M",
      "email": "bob@gmail.com",
+     "password": "abcdef",
      "phn": "02156874652",
      "usertype": "doctor",
      "org": "Org1MSP"

@@ -1,0 +1,9 @@
+POST http://localhost:5000/login
+Content-Type: application/json
+
+{
+     "organization": "Org1MSP",
+     "password": "abcdef",
+     "remember": "yes",
+     "userid": "doc1"
+}
