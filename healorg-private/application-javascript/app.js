@@ -168,11 +168,11 @@ async function main() {
 
             const PORT = 5000;
             const express = require('express');
-            //const cookieParser = require('cookie-parser');
+            const cookieParser = require('cookie-parser');
             let cors = require('cors');
             let crypto = require('crypto');
             let app = express();
-            //app.use(cookieParser());
+            app.use(cookieParser());
             app.use(cors({
                 origin: "http://localhost:3000",
                 credentials: true
@@ -203,8 +203,6 @@ async function main() {
                     } else {
                         const salt = crypto.randomBytes(128).toString('base64');
                         const hash = crypto.pbkdf2Sync(password, salt, 10000, 512, 'sha512').toString('base64');
-                        console.log(hash);
-                        console.log(salt);
                         const user = {
                             objectType: assetType,
                             ID: id,
@@ -243,14 +241,13 @@ async function main() {
             });
 
             app.post('/login', async function(req, res) {
-                const { organization, password, remember, userid } = req.body;
+                const { organization, password, userid } = req.body;
 
                 try {
                     let result, ress;
                     const user = { userID: userid };
                     let tmapData = Buffer.from(JSON.stringify(user));
                     if (organization == mspOrg1) {
-                        console.log("**********hoy nai");
                         let statefulTxn = contractOrg1.createTransaction('FindUser');
                         statefulTxn.setTransient({
                             user_find: tmapData
@@ -267,22 +264,146 @@ async function main() {
                     }
 
                     if (ress) {
-                        //let 
-                        //console.log(ress);
+                        let response = {
+                            id: ress.id,
+                            name: ress.name,
+                            gender: ress.gender,
+                            email: ress.email,
+                            organization: organization,
+                            phoneno: ress.phoneno,
+                            usertype: ress.usertype
+                        }
                         let hash = ress.password;
                         let salt = ress.salt;
 
                         const newHash = crypto.pbkdf2Sync(password, salt, 10000, 512, 'sha512').toString('base64');
-                        
+
                         if (hash === newHash) {
-                            res.send('Successfully logged in');
-                            // res.cookie('user', result.toString(), { maxAge: 3500000, httpOnly: true });
+                            res.cookie('user', result.toString(), { maxAge: 3500000, httpOnly: true });
+                            res.send(response);
                         } else {
-                            res.status(404).send('Wrong password')
+                            res.status(400).json({
+                                error: "wrong password"
+                            });
                         }
 
+                    }
+                } catch (error) {
+                    res.status(400).json({
+                        error: error.toString()
+                    });
+                }
+
+            });
+
+             app.get('/profile', async function (req, res) {
+                if (req.cookies.user == null) {
+                    res.json({
+                        isLoggedIn: false
+                    });
+                    return;
+                }
+
+                try {
+                    let user = JSON.parse(req.cookies.user.toString());
+                    const usr = { userID: user.id };
+                    console.log(user);
+                    let tmapData = Buffer.from(JSON.stringify(usr));
+                    let result;
+
+                    if (user.organization == mspOrg1) {
+                        let statefulTxn = contractOrg1.createTransaction('FindUser');
+                        statefulTxn.setTransient({
+                            user_find: tmapData
+                        });
+                        result = await statefulTxn.submit();
                     } else {
-                        res.status(404).send('user not exists in')
+                        let statefulTxn = contractOrg2.createTransaction('FindUser');
+                        statefulTxn.setTransient({
+                            user_find: tmapData
+                        });
+                        result = await statefulTxn.submit();
+                    }
+
+                    user = JSON.parse(result.toString());
+                    user.isLoggedIn = true;
+                    res.json(user);
+                } catch (error) {
+                    res.status(500).json({
+                        error: `Error: ${error}`,
+                        isLoggedIn: false,
+                    });
+                }
+            })
+
+            app.post('/updateUser', async function(req, res) {
+                const { id, name, gender, email, password, phn, usertype, org } = req.body;
+
+                try {
+                    let result;
+                    const salt = crypto.randomBytes(128).toString('base64');
+                    const hash = crypto.pbkdf2Sync(password, salt, 10000, 512, 'sha512').toString('base64');
+                    const user = {
+                        objectType: assetType,
+                        ID: id,
+                        Name: name,
+                        Gender: gender,
+                        Email: email,
+                        Password: hash,
+                        Salt: salt,
+                        PhoneNo: phn,
+                        UserType: usertype
+                    }
+                    let tmapData = Buffer.from(JSON.stringify(user));
+                    if (org == mspOrg1) {
+                        let statefulTxn = contractOrg1.createTransaction('UpdateUser');
+                        statefulTxn.setTransient({
+                            asset_properties: tmapData
+                        });
+                        result = await statefulTxn.submit();
+                    } else {
+                        let statefulTxn = contractOrg2.createTransaction('UpdateUser');
+                        statefulTxn.setTransient({
+                            asset_properties: tmapData
+                        });
+                        result = await statefulTxn.submit();
+                    }
+                    res.send(result.toString());
+                } catch (error) {
+                    res.status(400).send(error.toString());
+                }
+
+            });
+
+            app.post('/createprescription', async function(req, res) {
+                const { id, pid, name, docname, age, date, symtomp, disease, medicine, available, org } = req.body;
+                const pres = {
+                    objectType: assetType,
+                    ID: id,
+                    PID: pid,
+                    Name: name,
+                    DoctorName: docname,
+                    Age: age,
+                    Date: date,
+                    Symtomp: symtomp,
+                    Disease: disease,
+                    Medicine: medicine,
+                    Available: available
+                };
+                try {
+                    let tmapData = Buffer.from(JSON.stringify(pres));
+                    if (org == mspOrg1) {
+                        let statefulTxn = contractOrg1.createTransaction('CreatePrescription');
+                        statefulTxn.setTransient({
+                            asset_properties: tmapData
+                        });
+                        result = await statefulTxn.submit();
+                    } else {
+                        let statefulTxn = contractOrg2.createTransaction('CreatePrescription');
+                        statefulTxn.setTransient({
+                            asset_properties: tmapData
+                        });
+                        result = await statefulTxn.submit();
                     }
                 } catch (error) {
                     res.status(400).send(error.toString());
@@ -297,38 +418,8 @@ async function main() {
             let assetID1 = "pres1";
             let assetID2 = `pres2`;
             // let result;
-            /*let asset1Data = {
-                objectType: assetType,
-                ID: assetID1,
-                PID: "p1",
-                Name: "Mallika Dey",
-                DoctorName: "Dr. Robert",
-                Age: "22",
-                Date: "23.12.2022",
-                Symtomp: "high temparature",
-                Disease: "fever",
-                Medicine: "napa",
-                Available: 5
-            };
-            console.log('\n**************** As Org1 Client ****************');
-            console.log('Adding Assets to work with:\n--> Submit Transaction: CreatePrescription ' + assetID1);
-            let statefulTxn = contractOrg1.createTransaction('CreatePrescription');
-            //if you need to customize endorsement to specific set of Orgs, use setEndorsingOrganizations
-            //statefulTxn.setEndorsingOrganizations(mspOrg1);
-            let tmapData = Buffer.from(JSON.stringify(asset1Data));
-            statefulTxn.setTransient({
-                asset_properties: tmapData
-            });
-            result = await statefulTxn.submit();
+            /*
 
-            //Add asset2
-            console.log('\n--> Submit Transaction: CreatePrescription ' + assetID2);
-            statefulTxn = contractOrg2.createTransaction('CreatePrescription');
-            tmapData = Buffer.from(JSON.stringify(asset2Data));
-            statefulTxn.setTransient({
-                asset_properties: tmapData
-            });
-            result = await statefulTxn.submit();
 
 
             console.log('\n--> Evaluate Transaction: GetAssetByRange pres0-pres9');

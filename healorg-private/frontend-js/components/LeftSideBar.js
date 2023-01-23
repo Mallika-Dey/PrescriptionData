@@ -1,55 +1,72 @@
 import {
-  DesktopOutlined,
-  FileOutlined,
-  HomeOutlined,
-  TeamOutlined,
-  UserOutlined,
-  LoginOutlined,
+    DesktopOutlined,
+    FileOutlined,
+    HomeOutlined,
+    TeamOutlined,
+    UserOutlined,
+    LoginOutlined,
+    LogoutOutlined,
 } from '@ant-design/icons';
 
-import { useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Layout, Menu } from 'antd';
-import {useRouter} from 'next/router';
-const {Sider} = Layout;
+import { useRouter } from 'next/router';
+import LoadingBar from 'react-top-loading-bar';
+const { Sider } = Layout;
 
-function getItem(label, key, icon, children) {
-  return {
-    key,
-    icon,
-    children,
-    label,
-  };
-}
-const items = [
-  getItem('Home', '1', <HomeOutlined />),
-  getItem('Login', '2', <LoginOutlined />),
-  getItem('User', 'sub1', <UserOutlined />, [
-    getItem('Tom', '3'),
-    getItem('Bill', '4'),
-    getItem('Alex', '5'),
-  ]),
-  getItem('Team', 'sub2', <TeamOutlined />, [getItem('Team 1', '6'), getItem('Team 2', '7')]),
-  getItem('Files', '8', <FileOutlined />),
-];
 
-const onclick = [
-  '/', '/login', '/createuser', '/login', '/login',
-   '/login', '/login', '/login'
-];
+export default function LeftSideBar({ user }) {
 
-export default function LeftSideBar() {
-  const [collapsed, setCollapsed] = useState(false);
-  const router = useRouter();
-   const onClick = (e) => {
-    //console.log('click ', e);
-    console.log(e.key);
-   // setCurrent(e.key);
-    router.push(`${onclick[e.key-1]}`)
-  };
-	return (
-		 <Sider collapsible collapsed={collapsed} onCollapse={(value) => setCollapsed(value)}>
-        <h2 className="logo">Health Organization</h2>
-        <Menu theme="dark" defaultSelectedKeys={['1']} mode="inline" items={items} onClick = {onClick} />
-      </Sider>
-	)
+    const router = useRouter();
+    const ref = useRef(null)
+    const [progress, setProgress] = useState(0)
+
+    const [collapsed, setCollapsed] = useState(false);
+
+    useEffect(() => {
+        router.events.on('routeChangeStart', () => {
+            setProgress(40)
+        })
+        router.events.on('routeChangeComplete', () => {
+            setProgress(100)
+        })
+    })
+
+    return < >
+        <LoadingBar
+        color='#4C2BAB'
+        height=".6%"
+        progress={progress}
+        waitingTime={400}
+        onLoaderFinished={() => setProgress(0)}
+      />
+
+
+      <Sider collapsible collapsed = { collapsed } onCollapse = {
+            (value) => setCollapsed(value)
+        } >
+        <h2 className="logo">Healthorg</h2>
+
+        <Menu theme = "dark" mode = "inline" >
+        <Menu.Item key="1" icon={<HomeOutlined />} onClick={() => router.push('/')}>
+            Home
+        </Menu.Item> 
+        <Menu.Item key = "2" icon = { <TeamOutlined /> } onClick = {() => router.push('/login')} >
+        Team 
+        </Menu.Item> 
+        <Menu.Item key = "3" icon = { <FileOutlined /> } onClick = {() => router.push('/myFiles')} >
+        My Files 
+        </Menu.Item> 
+        {!user.value && <Menu.Item key="4" icon={<LoginOutlined / >} onClick = {() => router.push('/login')} >
+            Login 
+        </Menu.Item> }
+
+        { user.value && <Menu.Item key="4" icon={<LogoutOutlined/>} onClick={() => {
+                    localStorage.removeItem("token");
+                    setUser({value: null});
+                    router.push('/')}}>
+                    Logout
+                </Menu.Item> } 
+        </Menu> </Sider > 
+        </>
 }

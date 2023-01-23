@@ -3,15 +3,26 @@ import '../styles/globals.css';
 
 
 
-import React, { useState } from 'react';
+import React, { useEffect , useState } from 'react';
 import LeftSideBar from "../components/LeftSideBar";
 import { Breadcrumb, Layout, Menu } from 'antd';
+import { useRouter } from 'next/router';
 
 
 const { Header, Content, Footer } = Layout;
 
 
 function MyApp({ Component, pageProps }) {
+  const [user,setUser] = useState({value: null});
+  const router = useRouter();
+  
+
+   useEffect(() => {
+    let token = localStorage.getItem('token');
+    if (token) {
+      setUser({ value: token });
+    }
+   },[router.query])
 
   return (
     <Layout
@@ -19,7 +30,7 @@ function MyApp({ Component, pageProps }) {
         minHeight: '100vh',
       }}
     >
-     <LeftSideBar />
+     <LeftSideBar user={user}/>
       <Layout className="site-layout">
         <Header
           className="site-layout-background"

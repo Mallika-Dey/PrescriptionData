@@ -4,6 +4,5 @@ Content-Type: application/json
 {
      "organization": "Org1MSP",
      "password": "abcdef",
-     "remember": "yes",
      "userid": "doc1"
 }

@@ -129,6 +129,70 @@ export default function CreateUser() {
       }}
       scrollToFirstError
     >
+
+      <Form.Item
+        name="organization"
+        label="Organization"
+        rules={[
+          {
+            required: true,
+          },
+        ]}
+      >
+        <Select
+          placeholder="Select a organization"
+          allowClear
+        >
+          <Option value="Org1MSP">Org1MSP</Option>
+          <Option value="Org2MSP">Org2MSP</Option>
+        </Select>
+      </Form.Item>
+
+      <Form.Item
+        name="usertype"
+        label="User type"
+        rules={[
+          {
+            required: true,
+            message: 'Please select user type!',
+          },
+        ]}
+      >
+        <Select placeholder="select your user type">
+          <Option value="doctor">Doctor</Option>
+          <Option value="patient">Patient</Option>
+        </Select>
+      </Form.Item>
+      
+      <Form.Item
+        name="id"
+        label="ID"
+        rules={[
+          {
+            required: true,
+            message: 'Please input Unique Id for user!',
+            whitespace: true,
+          },
+        ]}
+      >
+        <Input />
+      </Form.Item>
+
+      <Form.Item
+        name="name"
+        label="Name"
+        tooltip="What do you want others to call you?"
+        rules={[
+          {
+            required: true,
+            message: 'Please input name!',
+            whitespace: true,
+          },
+        ]}
+      >
+        <Input />
+      </Form.Item>
+
       <Form.Item
         name="email"
         label="E-mail"
@@ -147,65 +211,13 @@ export default function CreateUser() {
       </Form.Item>
 
       <Form.Item
-        name="password"
-        label="Password"
-        rules={[
-          {
-            required: true,
-            message: 'Please input your password!',
-          },
-        ]}
-        hasFeedback
-      >
-        <Input.Password />
-      </Form.Item>
-
-      <Form.Item
-        name="confirm"
-        label="Confirm Password"
-        dependencies={['password']}
-        hasFeedback
-        rules={[
-          {
-            required: true,
-            message: 'Please confirm your password!',
-          },
-          ({ getFieldValue }) => ({
-            validator(_, value) {
-              if (!value || getFieldValue('password') === value) {
-                return Promise.resolve();
-              }
-              return Promise.reject(new Error('The two passwords that you entered do not match!'));
-            },
-          }),
-        ]}
-      >
-        <Input.Password />
-      </Form.Item>
-
-      <Form.Item
-        name="nickname"
-        label="Nickname"
-        tooltip="What do you want others to call you?"
-        rules={[
-          {
-            required: true,
-            message: 'Please input your nickname!',
-            whitespace: true,
-          },
-        ]}
-      >
-        <Input />
-      </Form.Item>
-
-      <Form.Item
         name="residence"
-        label="Habitual Residence"
+        label="Residence"
         rules={[
           {
             type: 'array',
             required: true,
-            message: 'Please select your habitual residence!',
+            message: 'Please select residence!',
           },
         ]}
       >
@@ -218,7 +230,7 @@ export default function CreateUser() {
         rules={[
           {
             required: true,
-            message: 'Please input your phone number!',
+            message: 'Please input phone number!',
           },
         ]}
       >
@@ -228,52 +240,6 @@ export default function CreateUser() {
             width: '100%',
           }}
         />
-      </Form.Item>
-
-      <Form.Item
-        name="donation"
-        label="Donation"
-        rules={[
-          {
-            required: true,
-            message: 'Please input donation amount!',
-          },
-        ]}
-      >
-        <InputNumber
-          addonAfter={suffixSelector}
-          style={{
-            width: '100%',
-          }}
-        />
-      </Form.Item>
-
-      <Form.Item
-        name="website"
-        label="Website"
-        rules={[
-          {
-            required: true,
-            message: 'Please input website!',
-          },
-        ]}
-      >
-        <AutoComplete options={websiteOptions} onChange={onWebsiteChange} placeholder="website">
-          <Input />
-        </AutoComplete>
-      </Form.Item>
-
-      <Form.Item
-        name="intro"
-        label="Intro"
-        rules={[
-          {
-            required: true,
-            message: 'Please input Intro',
-          },
-        ]}
-      >
-        <Input.TextArea showCount maxLength={100} />
       </Form.Item>
 
       <Form.Item
@@ -292,6 +258,7 @@ export default function CreateUser() {
           <Option value="other">Other</Option>
         </Select>
       </Form.Item>
+
 
       <Form.Item label="Captcha" extra="We must make sure that your are a human.">
         <Row gutter={8}>
