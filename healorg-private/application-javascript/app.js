@@ -145,6 +145,7 @@ async function main() {
         const walletPathOrg1 = path.join(__dirname, 'wallet/org1');
         const walletOrg1 = await buildWallet(Wallets, walletPathOrg1);
 
+
         const ccpOrg2 = buildCCPOrg2();
         const caOrg2Client = buildCAClient(FabricCAServices, ccpOrg2, 'ca.org2.example.com');
         const walletPathOrg2 = path.join(__dirname, 'wallet/org2');
@@ -163,6 +164,8 @@ async function main() {
         const contractOrg2 = networkOrg2.getContract(myChaincodeName);
         contractOrg2.addDiscoveryInterest({ name: myChaincodeName, collectionNames: [memberAssetCollectionName, org2PrivateCollectionName] });
 
+        const blockContractOrg1 = networkOrg1.getContract("qscc");
+        const blockContractOrg2 = networkOrg2.getContract("qscc");
 
         try {
 
@@ -296,7 +299,7 @@ async function main() {
 
             });
 
-             app.get('/profile', async function (req, res) {
+            app.get('/profile', async function(req, res) {
                 if (req.cookies.user == null) {
                     res.json({
                         isLoggedIn: false
@@ -392,6 +395,7 @@ async function main() {
                 };
                 try {
                     let tmapData = Buffer.from(JSON.stringify(pres));
+                    let result;
                     if (org == mspOrg1) {
                         let statefulTxn = contractOrg1.createTransaction('CreatePrescription');
                         statefulTxn.setTransient({
@@ -405,8 +409,25 @@ async function main() {
                         });
                         result = await statefulTxn.submit();
                     }
+                    result = {
+                        success: "yes"
+                    }
+                    res.send(result);
                 } catch (error) {
-                    res.status(400).send(error.toString());
+                    res.status(400).json({
+                        error: error.toString()
+                    });
+                }
+
+            });
+
+            app.post('/verifysig', async function(req, res) {
+                const { txid, pubkey, org } = req.body;
+                if (org == mspOrg1) {
+                    let getBlockByTX = await blockContractOrg1.evaluateTransaction("GetBlockByTxID", myChannel, txid);
+                    const resultJson = BlockDecoder.decode(getBlockByTX, pubkey, privateKey, mspOrg1);
+                } else {
+
                 }
 
             });

@@ -1,10 +1,12 @@
-import axios from "axios";
+import { useRouter } from 'next/router';
+let jwt = require('jsonwebtoken');
 
-export default function checkLoggedIn() {
-    axios.get("http://localhost:3000/login", { withCredentials: true }).then(response => {
-        //if(response.data.login && this.state.lo)
-        console.log("login?",response);
-    }).catch(error => {
-        console.log("check error", error);
-    });
+
+export default function auth({ user }) {
+    try {
+        var decoded = jwt.verify(user.value, 'secret123');
+    } catch (err) {
+        return null;
+    }
+    return decoded;
 }

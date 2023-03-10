@@ -13,7 +13,6 @@ var jwt = require('jsonwebtoken');
 export default function Login() {
 
     const router = useRouter();
-    // useUser({ redirectTo: '/user', redirectIfFound: true })
 
     const onFinish = async (values) => {
 

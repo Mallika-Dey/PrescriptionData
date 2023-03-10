@@ -30,7 +30,7 @@ function MyApp({ Component, pageProps }) {
         minHeight: '100vh',
       }}
     >
-     <LeftSideBar user={user}/>
+     <LeftSideBar user={user} setUser={setUser}/>
       <Layout className="site-layout">
         <Header
           className="site-layout-background"

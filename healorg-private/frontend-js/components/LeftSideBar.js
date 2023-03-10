@@ -13,9 +13,10 @@ import { Layout, Menu } from 'antd';
 import { useRouter } from 'next/router';
 import LoadingBar from 'react-top-loading-bar';
 const { Sider } = Layout;
+import auth from "../lib/auth";
 
 
-export default function LeftSideBar({ user }) {
+export default function LeftSideBar({ user, setUser }) {
 
     const router = useRouter();
     const ref = useRef(null)
@@ -31,6 +32,8 @@ export default function LeftSideBar({ user }) {
             setProgress(100)
         })
     })
+
+    let res = auth({ user });
 
     return < >
         <LoadingBar
@@ -54,9 +57,9 @@ export default function LeftSideBar({ user }) {
         <Menu.Item key = "2" icon = { <TeamOutlined /> } onClick = {() => router.push('/login')} >
         Team 
         </Menu.Item> 
-        <Menu.Item key = "3" icon = { <FileOutlined /> } onClick = {() => router.push('/myFiles')} >
-        My Files 
-        </Menu.Item> 
+        { user.value && res!=null && res.usertype=='doctor' && <Menu.Item key = "3" icon = { <FileOutlined /> } onClick = {() => router.push('/createprescription')} >
+        New Prescription 
+        </Menu.Item>  }
         {!user.value && <Menu.Item key="4" icon={<LoginOutlined / >} onClick = {() => router.push('/login')} >
             Login 
         </Menu.Item> }
