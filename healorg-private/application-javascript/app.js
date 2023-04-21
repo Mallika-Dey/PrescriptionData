@@ -108,21 +108,21 @@ async function registerUser(caOrgClient, walletOrg, mspOrg, OrgUserId, departmen
     await registerAndEnrollUser(caOrgClient, walletOrg, mspOrg, OrgUserId, department);
 }
 
-async function initContractFromOrg1Identity(ccpOrg1, caOrg1Client, walletOrg1) {
+async function initContractFromOrg1Identity(ccpOrg1, caOrg1Client, user, walletOrg1) {
     console.log('\n--> Fabric client user & Gateway init: Using Org1 identity to Org1 Peer');
 
     await enrollAdmin(caOrg1Client, walletOrg1, mspOrg1);
 
     try {
         const gatewayOrg1 = new Gateway();
-        return gatewayConnect(ccpOrg1, walletOrg1, 'admin', gatewayOrg1);
+        return gatewayConnect(ccpOrg1, walletOrg1, user, gatewayOrg1);
     } catch (error) {
         console.error(`Error in connecting to gateway: ${error}`);
         process.exit(1);
     }
 }
 
-async function initContractFromOrg2Identity(ccpOrg2, caOrg2Client, walletOrg2) {
+async function initContractFromOrg2Identity(ccpOrg2, caOrg2Client, user, walletOrg2) {
     console.log('\n--> Fabric client user & Gateway init: Using Org2 identity to Org2 Peer');
 
     await enrollAdmin(caOrg2Client, walletOrg2, mspOrg2);
@@ -130,7 +130,7 @@ async function initContractFromOrg2Identity(ccpOrg2, caOrg2Client, walletOrg2) {
     try {
         // Create a new gateway for connecting to Org's peer node.
         const gatewayOrg2 = new Gateway();
-        return gatewayConnect(ccpOrg2, walletOrg2, 'admin', gatewayOrg2);
+        return gatewayConnect(ccpOrg2, walletOrg2, user, gatewayOrg2);
     } catch (error) {
         console.error(`Error in connecting to gateway: ${error}`);
         process.exit(1);
@@ -151,17 +151,17 @@ async function main() {
         const walletPathOrg2 = path.join(__dirname, 'wallet/org2');
         const walletOrg2 = await buildWallet(Wallets, walletPathOrg2);
 
-        const gatewayOrg1 = await initContractFromOrg1Identity(ccpOrg1, caOrg1Client, walletOrg1);
-        const networkOrg1 = await gatewayOrg1.getNetwork(myChannel);
-        const contractOrg1 = networkOrg1.getContract(myChaincodeName);
+        let gatewayOrg1 = await initContractFromOrg1Identity(ccpOrg1, caOrg1Client, 'admin', walletOrg1);
+        let networkOrg1 = await gatewayOrg1.getNetwork(myChannel);
+        let contractOrg1 = networkOrg1.getContract(myChaincodeName);
         // Since this sample chaincode uses, Private Data Collection level endorsement policy, addDiscoveryInterest
         // scopes the discovery service further to use the endorsement policies of collections, if any
         contractOrg1.addDiscoveryInterest({ name: myChaincodeName, collectionNames: [memberAssetCollectionName, org1PrivateCollectionName] });
 
         /** ~~~~~~~ Fabric client init: Using Org2 identity to Org2 Peer ~~~~~~~ */
-        const gatewayOrg2 = await initContractFromOrg2Identity(ccpOrg2, caOrg2Client, walletOrg2);
-        const networkOrg2 = await gatewayOrg2.getNetwork(myChannel);
-        const contractOrg2 = networkOrg2.getContract(myChaincodeName);
+        let gatewayOrg2 = await initContractFromOrg2Identity(ccpOrg2, caOrg2Client, 'admin', walletOrg2);
+        let networkOrg2 = await gatewayOrg2.getNetwork(myChannel);
+        let contractOrg2 = networkOrg2.getContract(myChaincodeName);
         contractOrg2.addDiscoveryInterest({ name: myChaincodeName, collectionNames: [memberAssetCollectionName, org2PrivateCollectionName] });
 
         const blockContractOrg1 = networkOrg1.getContract("qscc");
@@ -283,6 +283,17 @@ async function main() {
 
                         if (hash === newHash) {
                             res.cookie('user', result.toString(), { maxAge: 3500000, httpOnly: true });
+                            if (organization == mspOrg1) {
+                                gatewayOrg1 = await initContractFromOrg1Identity(ccpOrg1, caOrg1Client, userid, walletOrg1);
+                                networkOrg1 = await gatewayOrg1.getNetwork(myChannel);
+                                contractOrg1 = networkOrg1.getContract(myChaincodeName);
+                                contractOrg1.addDiscoveryInterest({ name: myChaincodeName, collectionNames: [memberAssetCollectionName, org1PrivateCollectionName] });
+                            } else {
+                                gatewayOrg2 = await initContractFromOrg2Identity(ccpOrg2, caOrg2Client, userid, walletOrg2);
+                                networkOrg2 = await gatewayOrg2.getNetwork(myChannel);
+                                contractOrg2 = networkOrg2.getContract(myChaincodeName);
+                                contractOrg2.addDiscoveryInterest({ name: myChaincodeName, collectionNames: [memberAssetCollectionName, org2PrivateCollectionName] });
+                            }
                             res.send(response);
                         } else {
                             res.status(400).json({
@@ -379,11 +390,12 @@ async function main() {
             });
 
             app.post('/createprescription', async function(req, res) {
-                const { id, pid, name, docname, age, date, symtomp, disease, medicine, available, org } = req.body;
+                const { id, pid, did, name, docname, age, date, symtomp, disease, medicine, available, org } = req.body;
                 const pres = {
                     objectType: assetType,
                     ID: id,
                     PID: pid,
+                    DocID: did,
                     Name: name,
                     DoctorName: docname,
                     Age: age,
@@ -393,30 +405,55 @@ async function main() {
                     Medicine: medicine,
                     Available: available
                 };
+                let dt;
                 try {
-                    let tmapData = Buffer.from(JSON.stringify(pres));
-                    let result;
+                    const user = { userID: pid };
+                    let tmapData = Buffer.from(JSON.stringify(user));
                     if (org == mspOrg1) {
-                        let statefulTxn = contractOrg1.createTransaction('CreatePrescription');
+                        let statefulTxn = contractOrg1.createTransaction('FindUser');
                         statefulTxn.setTransient({
-                            asset_properties: tmapData
+                            user_find: tmapData
                         });
-                        result = await statefulTxn.submit();
+                        dt = await statefulTxn.submit();
                     } else {
-                        let statefulTxn = contractOrg2.createTransaction('CreatePrescription');
+                        let statefulTxn = contractOrg2.createTransaction('FindUser');
                         statefulTxn.setTransient({
-                            asset_properties: tmapData
+                            user_find: tmapData
                         });
-                        result = await statefulTxn.submit();
+                        dt = await statefulTxn.submit();
                     }
-                    result = {
-                        success: "yes"
-                    }
-                    res.send(result);
                 } catch (error) {
                     res.status(400).json({
-                        error: error.toString()
+                        error: "Patient id doesn't exit\nPlease register first"
                     });
+                }
+                if (dt) {
+                    try {
+
+                        let tmapData = Buffer.from(JSON.stringify(pres));
+                        let result;
+                        if (org == mspOrg1) {
+                            let statefulTxn = contractOrg1.createTransaction('CreatePrescription');
+                            statefulTxn.setTransient({
+                                asset_properties: tmapData
+                            });
+                            result = await statefulTxn.submit();
+                        } else {
+                            let statefulTxn = contractOrg2.createTransaction('CreatePrescription');
+                            statefulTxn.setTransient({
+                                asset_properties: tmapData
+                            });
+                            result = await statefulTxn.submit();
+                        }
+                        result = {
+                            success: "yes"
+                        }
+                        res.send(result);
+                    } catch (error) {
+                        res.status(400).json({
+                            error: error.toString()
+                        });
+                    }
                 }
 
             });
@@ -429,6 +466,27 @@ async function main() {
                 } else {
 
                 }
+
+            });
+
+            app.post('/findprescription', async function(req, res) {
+                const { assettype, docid, org } = req.body;
+                let result;
+                try {
+                    if (org == mspOrg1) {
+                        result = await contractOrg1.evaluateTransaction('QueryAssetByOwner', assettype, docid);
+                    } else {
+                        result = await contractOrg2.evaluateTransaction('QueryAssetByOwner', assettype, docid);
+                    }
+                    //console.log(prettyJSONString(result));
+                    //console.log(prettyJSONString(result.toString()));
+                    res.send(result);
+                } catch (error) {
+                    res.status(400).json({
+                        error: error.toString()
+                    });
+                }
+
 
             });
 

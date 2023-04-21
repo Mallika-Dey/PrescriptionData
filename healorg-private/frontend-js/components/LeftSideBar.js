@@ -33,7 +33,7 @@ export default function LeftSideBar({ user, setUser }) {
         })
     })
 
-    let res = auth({ user });
+    let res = auth( user.value );
 
     return < >
         <LoadingBar
@@ -60,11 +60,15 @@ export default function LeftSideBar({ user, setUser }) {
         { user.value && res!=null && res.usertype=='doctor' && <Menu.Item key = "3" icon = { <FileOutlined /> } onClick = {() => router.push('/createprescription')} >
         New Prescription 
         </Menu.Item>  }
-        {!user.value && <Menu.Item key="4" icon={<LoginOutlined / >} onClick = {() => router.push('/login')} >
+        { user.value && res!=null && res.usertype=='doctor' && <Menu.Item key = "4" icon = { <FileOutlined /> } onClick = {() => router.push({
+        pathname: '/preslist', query: { name: user.value }})} >
+        View Prescription 
+        </Menu.Item>  }
+        {!user.value && <Menu.Item key="5" icon={<LoginOutlined / >} onClick = {() => router.push('/login')} >
             Login 
         </Menu.Item> }
 
-        { user.value && <Menu.Item key="4" icon={<LogoutOutlined/>} onClick={() => {
+        { user.value && <Menu.Item key="5" icon={<LogoutOutlined/>} onClick={() => {
                     localStorage.removeItem("token");
                     setUser({value: null});
                     router.push('/')}}>

@@ -31,6 +31,7 @@ type Prescription struct {
 	ID         string `json:"id"`
 	PID        string `json: "pid"`
 	DocID      string `json: "did"`
+	Owner      string `json: "owner"`
 	Name       string `json:"name"`
 	DoctorName string `json:"doctorname"`
 	Age        string `json:"age"`
@@ -73,6 +74,7 @@ func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInt
 		Type       string `json:"objectType"`
 		ID         string `json:"id"`
 		PID        string `json: "pid"`
+		DocID      string `json: "did"`
 		Name       string `json:"name"`
 		DoctorName string `json:"doctorname"`
 		Age        string `json:"age"`
@@ -97,6 +99,9 @@ func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInt
 	}
 	if len(prescriptionInput.PID) == 0 {
 		return fmt.Errorf("patient id field must be a non-empty string")
+	}
+	if len(prescriptionInput.DocID) == 0 {
+		return fmt.Errorf("docotr's id field must be a non-empty string")
 	}
 	if len(prescriptionInput.DoctorName) == 0 {
 		return fmt.Errorf("doctor id field must be a non-empty string")
@@ -152,7 +157,8 @@ func (s *SmartContract) CreatePrescription(ctx contractapi.TransactionContextInt
 		Type:       prescriptionInput.Type,
 		ID:         prescriptionInput.ID,
 		PID:        prescriptionInput.PID,
-		DocID:      clientID,
+		DocID:      prescriptionInput.DocID,
+		Owner:      clientID,
 		Name:       prescriptionInput.Name,
 		DoctorName: prescriptionInput.DoctorName,
 		Age:        prescriptionInput.Age,
@@ -339,7 +345,7 @@ func (s *SmartContract) TransferAsset(ctx contractapi.TransactionContextInterfac
 	}
 
 	// Verify transfer details and transfer owner
-	err = s.verifyAgreement(ctx, prescriptionTransferInput.ID, prescription.DocID, prescriptionTransferInput.RequestedMSP)
+	err = s.verifyAgreement(ctx, prescriptionTransferInput.ID, prescription.Owner, prescriptionTransferInput.RequestedMSP)
 	if err != nil {
 		return fmt.Errorf("failed transfer verification: %v", err)
 	}
@@ -353,7 +359,7 @@ func (s *SmartContract) TransferAsset(ctx contractapi.TransactionContextInterfac
 	}
 
 	// Transfer asset in private data collection to new owner
-	prescription.DocID = transferAgreement.RequestedDocID
+	prescription.Owner = transferAgreement.RequestedDocID
 
 	presJSONasBytes, err := json.Marshal(prescription)
 	if err != nil {
@@ -396,7 +402,7 @@ func (s *SmartContract) TransferAsset(ctx contractapi.TransactionContextInterfac
 // verifyAgreement is an internal helper function used by TransferAsset to verify
 // that the transfer is being initiated by the owner and that the buyer has agreed
 // to the same appraisal value as the owner
-func (s *SmartContract) verifyAgreement(ctx contractapi.TransactionContextInterface, prescriptionID string, docID string, reqDocMSP string) error {
+func (s *SmartContract) verifyAgreement(ctx contractapi.TransactionContextInterface, prescriptionID string, owner string, reqDocMSP string) error {
 
 	// Check 1: verify that the transfer is being initiatied by the owner
 
@@ -406,7 +412,7 @@ func (s *SmartContract) verifyAgreement(ctx contractapi.TransactionContextInterf
 		return err
 	}
 
-	if clientID != docID {
+	if clientID != owner {
 		return fmt.Errorf("error: submitting client identity does not own prescription")
 	}
 

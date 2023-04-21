@@ -23,6 +23,7 @@ export default function VerifySig() {
         const data = {
             id: values.data.id,
             pid: values.data.pid,
+            did: values.data.did,
             name: values.data.name,
             docname: values.data.docname,
             age: values.data.age,
@@ -48,6 +49,7 @@ export default function VerifySig() {
         const result = await response.json();
         if ('error' in result) {
             console.log(result.error);
+            alert(result.error);
         } 
     };
     const onFinishFailed = (errorInfo) => {
@@ -88,6 +90,17 @@ export default function VerifySig() {
           {
             required: true,
             message: "Enter patient's userid!",
+          },
+        ]}>
+          <Input />
+        </Form.Item>
+
+        <Form.Item label="DocID"
+        name={['data', 'did']}
+        rules={[
+          {
+            required: true,
+            message: "Enter your userid!",
           },
         ]}>
           <Input />
@@ -183,8 +196,8 @@ export default function VerifySig() {
           },
         ]}>
           <Select>
-            <Select.Option value="org1">Org1</Select.Option>
-            <Select.Option value="org2">Org2</Select.Option>
+            <Select.Option value="Org1MSP">Org1MSP</Select.Option>
+            <Select.Option value="Org2MSP">Org2MSP</Select.Option>
           </Select>
         </Form.Item>  
       

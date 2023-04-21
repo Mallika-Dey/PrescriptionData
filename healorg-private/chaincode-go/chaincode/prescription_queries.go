@@ -14,7 +14,7 @@ import (
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 )
 
-// ReadAsset reads the information from collection
+// ReadAsset reads the information from collectio
 func (s *SmartContract) ReadPrescription(ctx contractapi.TransactionContextInterface, presID string) (*Prescription, error) {
 
 	log.Printf("ReadAsset: collection %v, ID %v", presCollection, presID)
@@ -116,29 +116,9 @@ func (s *SmartContract) GetAssetByRange(ctx contractapi.TransactionContextInterf
 
 }
 
-// =======Rich queries =========================================================================
-// Two examples of rich queries are provided below (parameterized query and ad hoc query).
-// Rich queries pass a query string to the state database.
-// Rich queries are only supported by state database implementations
-//  that support rich query (e.g. CouchDB).
-// The query string is in the syntax of the underlying state database.
-// With rich queries there is no guarantee that the result set hasn't changed between
-//  endorsement time and commit time, aka 'phantom reads'.
-// Therefore, rich queries should not be used in update transactions, unless the
-// application handles the possibility of result set changes between endorsement and commit time.
-// Rich queries can be used for point-in-time queries against a peer.
-// ============================================================================================
+func (s *SmartContract) QueryAssetByOwner(ctx contractapi.TransactionContextInterface, assetType string, docid string) ([]*Prescription, error) {
 
-// ===== Example: Parameterized rich query =================================================
-
-// QueryAssetByOwner queries for assets based on assetType, owner.
-// This is an example of a parameterized query where the query logic is baked into the chaincode,
-// and accepting a single query parameter (owner).
-// Only available on state databases that support rich query (e.g. CouchDB)
-// =========================================================================================
-func (s *SmartContract) QueryAssetByOwner(ctx contractapi.TransactionContextInterface, assetType string, owner string) ([]*Prescription, error) {
-
-	queryString := fmt.Sprintf("{\"selector\":{\"objectType\":\"%v\",\"DocID\":\"%v\"}}", assetType, owner)
+	queryString := fmt.Sprintf("{\"selector\":{\"objectType\":\"%v\",\"DocID\":\"%v\"}}", assetType, docid)
 
 	queryResults, err := s.getQueryResultForQueryString(ctx, queryString)
 	if err != nil {
