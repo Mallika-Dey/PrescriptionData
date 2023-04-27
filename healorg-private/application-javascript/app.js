@@ -25,6 +25,9 @@ const Org2UserId = 'appUser2';
 const departmentOrg1 = 'org1.department1';
 const departmentOrg2 = 'org2.department1';
 
+//const { BlockDecoder } = require('fabric-common');
+var VerifySign = require('./VerifySign.js');
+
 
 const RED = '\x1b[31m\n';
 const RESET = '\x1b[0m';
@@ -459,12 +462,26 @@ async function main() {
             });
 
             app.post('/verifysig', async function(req, res) {
-                const { txid, pubkey, org } = req.body;
-                if (org == mspOrg1) {
-                    let getBlockByTX = await blockContractOrg1.evaluateTransaction("GetBlockByTxID", myChannel, txid);
-                    const resultJson = BlockDecoder.decode(getBlockByTX, pubkey, privateKey, mspOrg1);
-                } else {
+                const { txid, pubkey } = req.body;
 
+                try {
+                    let getBlockByTX = await blockContractOrg1.evaluateTransaction("GetBlockByTxID", myChannel, txid);
+                    const resultJson = VerifySign.verifysign(getBlockByTX);
+                    let signature = resultJson.data.data[0].signature;
+                    let payload = resultJson.data.data[0].payload;
+
+                    const verify = crypto.createVerify('SHA256');
+                    verify.update(payload);
+                    verify.end();
+                    const veritifation = verify.verify(pubkey, signature);
+                    const result = {
+                        veritifation: veritifation
+                    }
+                    res.send(result);
+                } catch (error) {
+                    res.status(400).json({
+                        error: error.toString()
+                    });
                 }
 
             });

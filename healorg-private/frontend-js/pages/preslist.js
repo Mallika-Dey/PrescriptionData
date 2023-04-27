@@ -41,26 +41,36 @@ export default function Preslist(props) {
         if ('error' in data) {
             router.push('/rt');
         } else if (data.length > 0) {
+          console.log(data);
             setPrescription(data);
         }
     };
 
     return < >
-        <table>
-          <thead>
+      <html>
+        <head>
+          <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.2.1/css/bootstrap.min.css" />
+
+          <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous" />
+
+      </head>
+      <body>
+        <table class="table">
+          <thead class="thead-dark">
             <tr>
-              <th>ID</th>
-              <th>Patient id</th>
-              <th>Patient Name</th>
-              <th>Disease</th>
-              <th>Date</th>
+              <th scope="col">ID</th>
+              <th scope="col">Patient id</th>
+              <th scope="col">Patient Name</th>
+              <th scope="col">Disease</th>
+              <th scope="col">Date</th>
             </tr>
           </thead>
           <tbody>
             <PrescriptionData prescription={prescription} />
           </tbody>
         </table>
-
+        </body>
+        </html>
         </>
 
 }

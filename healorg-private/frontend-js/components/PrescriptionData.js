@@ -3,15 +3,15 @@ const PrescriptionData = ({ prescription }) => {
     	<> 
     	{
             prescription.map((it) => {
-                const { id, pid, name, disease, data } = it;
+                const { id, PID, name, disease, date } = it;
 
                 return (
                 	<tr key={id}>
                 		<td>{id}</td>
-                		<td>{pid}</td>
+                		<td>{PID}</td>
                 		<td>{name}</td>
                 		<td>{disease}</td>
-                		<td>{data}</td>
+                		<td>{date}</td>
                 	</tr>
                 )
             })
