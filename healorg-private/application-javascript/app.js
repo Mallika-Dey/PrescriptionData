@@ -354,40 +354,75 @@ async function main() {
             })
 
             app.post('/updateUser', async function(req, res) {
-                const { id, name, gender, email, password, phn, usertype, org } = req.body;
+                const { id, email, password, phn, org } = req.body;
 
                 try {
-                    let result;
-                    const salt = crypto.randomBytes(128).toString('base64');
-                    const hash = crypto.pbkdf2Sync(password, salt, 10000, 512, 'sha512').toString('base64');
+                    const userid = { userID: id };
+                    let tmapData = Buffer.from(JSON.stringify(userid));
+
+                    let prevData, pass;
+                    if (org == mspOrg1) {
+                        let statefulTxn = contractOrg1.createTransaction('FindUser');
+                        statefulTxn.setTransient({
+                            user_find: tmapData
+                        });
+                        let result = await statefulTxn.submit();
+                        prevData = JSON.parse(result.toString());
+
+                    } else {
+                        let statefulTxn = contractOrg1.createTransaction('FindUser');
+                        statefulTxn.setTransient({
+                            user_find: tmapData
+                        });
+                        let result = await statefulTxn.submit();
+                        prevData = JSON.parse(result.toString());
+                    }
+                    if (password) {
+                        const hash = crypto.pbkdf2Sync(password, prevData.salt, 10000, 512, 'sha512').toString('base64');
+                        pass = hash;
+                    } else {
+                        pass = prevData.password;
+                    }
                     const user = {
                         objectType: assetType,
-                        ID: id,
-                        Name: name,
-                        Gender: gender,
-                        Email: email,
-                        Password: hash,
-                        Salt: salt,
-                        PhoneNo: phn,
-                        UserType: usertype
+                        ID: prevData.id,
+                        Name: prevData.name,
+                        Gender: prevData.gender,
+                        Email: email || prevData.email,
+                        Password: pass,
+                        Salt: prevData.salt,
+                        PhoneNo: phn || prevData.phoneno,
+                        UserType: prevData.usertype
                     }
-                    let tmapData = Buffer.from(JSON.stringify(user));
+                    tmapData = Buffer.from(JSON.stringify(user));
                     if (org == mspOrg1) {
                         let statefulTxn = contractOrg1.createTransaction('UpdateUser');
                         statefulTxn.setTransient({
                             asset_properties: tmapData
                         });
-                        result = await statefulTxn.submit();
+                        await statefulTxn.submit();
                     } else {
                         let statefulTxn = contractOrg2.createTransaction('UpdateUser');
                         statefulTxn.setTransient({
                             asset_properties: tmapData
                         });
-                        result = await statefulTxn.submit();
+                        await statefulTxn.submit();
                     }
-                    res.send(result.toString());
+                    let response = {
+                        id: user.ID,
+                        name: user.Name,
+                        gender: user.Gender,
+                        email: user.Email,
+                        organization: org,
+                        phoneno: user.PhoneNo,
+                        usertype: user.UserType
+                    }
+                    console.log(response);
+                    res.send(response);
                 } catch (error) {
-                    res.status(400).send(error.toString());
+                    res.status(400).json({
+                        error: error.toString()
+                    });
                 }
 
             });
@@ -495,8 +530,6 @@ async function main() {
                     } else {
                         result = await contractOrg2.evaluateTransaction('QueryAssetByOwner', assettype, docid);
                     }
-                    //console.log(prettyJSONString(result));
-                    //console.log(prettyJSONString(result.toString()));
                     res.send(result);
                 } catch (error) {
                     res.status(400).json({

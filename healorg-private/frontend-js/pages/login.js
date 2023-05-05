@@ -43,7 +43,7 @@ export default function Login() {
         } else {
             var token = jwt.sign(result, 'secret123', { expiresIn: '1h' });
             localStorage.setItem('token', token);
-            router.push('/user');
+            router.push('/');
         }
 
     };

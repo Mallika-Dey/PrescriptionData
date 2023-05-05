@@ -6,6 +6,7 @@ import {
     UserOutlined,
     LoginOutlined,
     LogoutOutlined,
+    KeyOutlined,
 } from '@ant-design/icons';
 
 import { useEffect, useState, useRef } from 'react';
@@ -64,16 +65,25 @@ export default function LeftSideBar({ user, setUser }) {
         pathname: '/preslist', query: { name: user.value }})} >
         View Prescription 
         </Menu.Item>  }
-        {!user.value && <Menu.Item key="5" icon={<LoginOutlined / >} onClick = {() => router.push('/login')} >
+
+        {user.value && res!=null && <Menu.Item key="5" icon={<UserOutlined />} onClick={() => router.push({pathname:'/updateuser', query: { name: user.value }})}>
+                    UpdateProfile
+                </Menu.Item>} 
+
+        {user.value && res!=null && <Menu.Item key="6" icon={<KeyOutlined />} onClick={() => router.push({pathname:'/changepass', query: { name: user.value }})}>
+                    ChangePass
+                </Menu.Item>} 
+                
+        {res==null  && <Menu.Item key="5" icon={<LoginOutlined / >} onClick = {() => router.push('/login')} >
             Login 
         </Menu.Item> }
-
-        { user.value && <Menu.Item key="5" icon={<LogoutOutlined/>} onClick={() => {
+        { res!=null && <Menu.Item key="7" icon={<LogoutOutlined/>} onClick={() => {
                     localStorage.removeItem("token");
                     setUser({value: null});
+                    res=null;
                     router.push('/')}}>
                     Logout
-                </Menu.Item> } 
+                </Menu.Item> }
         </Menu> </Sider > 
         </>
 }

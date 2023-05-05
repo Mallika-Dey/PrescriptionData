@@ -1,7 +1,24 @@
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { Button, Checkbox, Form, Input } from 'antd';
+import { useRouter } from 'next/router';
+import { useEffect } from 'react';
+import auth from "../lib/auth";
 
 export default function VerifySig() {
+
+    let res;
+    const router = useRouter();
+    useEffect(() => {
+        res = auth(router.query.name);
+
+        if (res == null) {
+            router.push('/login');
+        } else if (res.usertype != 'doctor') {
+            router.push('/');
+        }
+
+    }, [router.query])
+
     const onFinish = async (values) => {
         const url = "http://localhost:5000/verifysig"
         const data = {

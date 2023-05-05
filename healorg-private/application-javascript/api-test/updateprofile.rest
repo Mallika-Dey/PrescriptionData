@@ -1,0 +1,8 @@
+POST http://localhost:5000/updateUser
+Content-Type: application/json
+
+{
+     "id": "doc1",
+     "phn": "01834195709",
+     "org": "Org1MSP"
+}
