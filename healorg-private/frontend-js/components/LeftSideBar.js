@@ -49,7 +49,7 @@ export default function LeftSideBar({ user, setUser }) {
       <Sider collapsible collapsed = { collapsed } onCollapse = {
             (value) => setCollapsed(value)
         } >
-        <h2 className="logo">Healthorg</h2>
+        <h2 className="logo">Healthcare</h2>
 
         <Menu theme = "dark" mode = "inline" >
         <Menu.Item key="1" icon={<HomeOutlined />} onClick={() => router.push('/')}>
@@ -73,11 +73,15 @@ export default function LeftSideBar({ user, setUser }) {
         {user.value && res!=null && <Menu.Item key="6" icon={<KeyOutlined />} onClick={() => router.push({pathname:'/changepass', query: { name: user.value }})}>
                     ChangePass
                 </Menu.Item>} 
+
+        {res!=null && <Menu.Item key="7" icon={<KeyOutlined />} onClick={() => router.push({pathname:'/verifysig', query: { name: user.value }})}>
+                    Verify Signature
+                </Menu.Item>} 
                 
         {res==null  && <Menu.Item key="5" icon={<LoginOutlined / >} onClick = {() => router.push('/login')} >
             Login 
         </Menu.Item> }
-        { res!=null && <Menu.Item key="7" icon={<LogoutOutlined/>} onClick={() => {
+        { res!=null && <Menu.Item key="8" icon={<LogoutOutlined/>} onClick={() => {
                     localStorage.removeItem("token");
                     setUser({value: null});
                     res=null;

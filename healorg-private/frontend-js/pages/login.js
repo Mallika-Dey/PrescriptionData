@@ -39,6 +39,7 @@ export default function Login() {
 
         const result = await response.json();
         if ('error' in result) {
+            console.log(result.error)
             alert('wrong id, organization, or password');
         } else {
             var token = jwt.sign(result, 'secret123', { expiresIn: '1h' });
@@ -78,7 +79,7 @@ export default function Login() {
           },
         ]}
       >
-        <Input />
+        <Input placeholder="Enter your userid"/>
       </Form.Item>
 
       <Form.Item
@@ -109,7 +110,7 @@ export default function Login() {
           },
         ]}
       >
-        <Input.Password />
+        <Input.Password placeholder="Enter password"/>
       </Form.Item>
 
       <Form.Item
@@ -130,7 +131,7 @@ export default function Login() {
         }}
       >
         <Button type="primary" htmlType="submit">
-          Submit
+          Log In
         </Button>
       </Form.Item>
     </Form>

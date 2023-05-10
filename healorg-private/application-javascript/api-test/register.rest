@@ -3,10 +3,10 @@ Content-Type: application/json
 
 {
      "id": "doc1",
-     "name": "Bob",
+     "name": "Albert",
      "gender": "M",
-     "email": "bob@gmail.com",
-     "password": "abcdef",
+     "email": "tulidey06@gmail.com",
+     "password": "hdg354",
      "phn": "02156874652",
      "usertype": "doctor",
      "org": "Org1MSP"

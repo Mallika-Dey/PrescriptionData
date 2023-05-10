@@ -1,12 +1,13 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import sendmail from "../components/sendmail";
+import auth from "../lib/auth";
 
 const CreateUser = () => {
   const [form] = useRef();
   const router = useRouter();
 
-  useEffect(() => {
+  /*useEffect(() => {
         let res = auth(router.query.name);
 
         if (res == null) {
@@ -15,11 +16,11 @@ const CreateUser = () => {
             router.push('/');
         }
 
-    }, [router.query])
+    }, [router.query])*/
 
   const onFinish = async (e) => {
     e.preventDefault();
-    const url = "http://localhost:5000/register"
+    const url = "http://localhost:5000/registeruser"
     const data = {
         id: e.target.userid.value,
         name: e.target.user_name.value,
@@ -44,10 +45,11 @@ const CreateUser = () => {
     });
 
     const result = await response.json();
+    console.log(result);
     if ('error' in result) {
         alert('registration failed');
     } else {
-        router.push('/user');
+        router.push('/');
     }
     sendmail(e);
   };

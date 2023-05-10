@@ -204,7 +204,9 @@ async function main() {
                         userIdentity = await walletOrg2.get(id);
                     }
                     if (userIdentity) {
-                        res.send(`user id exists in ${org}`);
+                        res.status(400).json({
+                            error: `user id exists in ${org}`
+                        });
                         return;
                     } else {
                         const salt = crypto.randomBytes(128).toString('base64');
@@ -238,10 +240,14 @@ async function main() {
                             result = await statefulTxn.submit();
                             await registerUser(caOrg2Client, walletOrg2, mspOrg2, id, departmentOrg2);
                         }
-                        res.send(result.toString());
+                        res.status(200).json({
+                            success: "Successfully Created"
+                        });
                     }
                 } catch (error) {
-                    res.status(400).send(error.toString());
+                    res.status(400).json({
+                        error: error.toString()
+                    });
                 }
 
             });

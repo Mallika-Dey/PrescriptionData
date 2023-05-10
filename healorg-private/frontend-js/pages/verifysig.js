@@ -38,10 +38,9 @@ export default function VerifySig() {
         });
         const result = await response.json();
         if ('error' in result) {
-            console.log(result.error);
-            alert(result.error);
+            router.push('/failed')
         } 
-        console.log(result);
+        else router.push('/verified')
     };
     const onFinishFailed = (errorInfo) => {
         console.log('Failed:', errorInfo);
@@ -73,16 +72,16 @@ export default function VerifySig() {
 
       <Form.Item
         name="pubkey"
-        label="public key"
+        label="Certificate"
         rules={[
           {
             required: true,
-            message: 'Public key of Doctor!',
+            message: 'Certificate of Doctor!',
           },
         ]}
       >
        <Input 
-       		type="text" placeholder="Public key of Doctor" 
+       		type="text" placeholder="Certificate of Creator" 
        	/>
       </Form.Item>
       

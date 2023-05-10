@@ -9,3 +9,7 @@
 .site-layout .site-layout-background {
     background: #fff;
 }
+
+.site-result-demo-error-icon {
+  color: red;
+}
