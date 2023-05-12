@@ -255,38 +255,30 @@ async function main() {
             app.post('/login', async function(req, res) {
                 const { organization, password, userid } = req.body;
 
+                let result;
                 try {
-                    let result, ress;
-                    const user = { userID: userid };
-                    let tmapData = Buffer.from(JSON.stringify(user));
                     if (organization == mspOrg1) {
-                        let statefulTxn = contractOrg1.createTransaction('FindUser');
-                        statefulTxn.setTransient({
-                            user_find: tmapData
-                        });
-                        result = await statefulTxn.submit();
-                        ress = JSON.parse(result.toString());
+                        //Fix bug
+                        let ress = await contractOrg1.evaluateTransaction('FindUser', userid);
+                        result=JSON.parse(ress.toString());
+                        console.log(result);
                     } else {
-                        let statefulTxn = contractOrg2.createTransaction('FindUser');
-                        statefulTxn.setTransient({
-                            user_find: tmapData
-                        });
-                        result = await statefulTxn.submit();
-                        ress = JSON.parse(result.toString());
+                        let ress = await contractOrg2.evaluateTransaction('FindUser', userid);
+                        result=JSON.parse(ress.toString());
                     }
 
-                    if (ress) {
+                    if (result) {
                         let response = {
-                            id: ress.id,
-                            name: ress.name,
-                            gender: ress.gender,
-                            email: ress.email,
+                            id: result.id,
+                            name: result.name,
+                            gender: result.gender,
+                            email: result.email,
                             organization: organization,
-                            phoneno: ress.phoneno,
-                            usertype: ress.usertype
+                            phoneno: result.phoneno,
+                            usertype: result.usertype
                         }
-                        let hash = ress.password;
-                        let salt = ress.salt;
+                        let hash = result.password;
+                        let salt = result.salt;
 
                         const newHash = crypto.pbkdf2Sync(password, salt, 10000, 512, 'sha512').toString('base64');
 
@@ -363,25 +355,14 @@ async function main() {
                 const { id, email, password, phn, org } = req.body;
 
                 try {
-                    const userid = { userID: id };
-                    let tmapData = Buffer.from(JSON.stringify(userid));
-
                     let prevData, pass;
                     if (org == mspOrg1) {
-                        let statefulTxn = contractOrg1.createTransaction('FindUser');
-                        statefulTxn.setTransient({
-                            user_find: tmapData
-                        });
-                        let result = await statefulTxn.submit();
-                        prevData = JSON.parse(result.toString());
+                        prevData = await contractOrg1.evaluateTransaction('FindUser', id);
+                        //prevData = JSON.parse(result.toString());
 
                     } else {
-                        let statefulTxn = contractOrg1.createTransaction('FindUser');
-                        statefulTxn.setTransient({
-                            user_find: tmapData
-                        });
-                        let result = await statefulTxn.submit();
-                        prevData = JSON.parse(result.toString());
+                        prevData = await contractOrg2.evaluateTransaction('FindUser', id);
+                        //prevData = JSON.parse(result.toString());
                     }
                     if (password) {
                         const hash = crypto.pbkdf2Sync(password, prevData.salt, 10000, 512, 'sha512').toString('base64');
@@ -400,7 +381,7 @@ async function main() {
                         PhoneNo: phn || prevData.phoneno,
                         UserType: prevData.usertype
                     }
-                    tmapData = Buffer.from(JSON.stringify(user));
+                    let tmapData = Buffer.from(JSON.stringify(user));
                     if (org == mspOrg1) {
                         let statefulTxn = contractOrg1.createTransaction('UpdateUser');
                         statefulTxn.setTransient({
@@ -449,33 +430,22 @@ async function main() {
                     Medicine: medicine,
                     Available: available
                 };
-                let dt;
+                let result;
                 try {
-                    const user = { userID: pid };
-                    let tmapData = Buffer.from(JSON.stringify(user));
                     if (org == mspOrg1) {
-                        let statefulTxn = contractOrg1.createTransaction('FindUser');
-                        statefulTxn.setTransient({
-                            user_find: tmapData
-                        });
-                        dt = await statefulTxn.submit();
+                        result = await contractOrg1.evaluateTransaction('FindUser', pid);
                     } else {
-                        let statefulTxn = contractOrg2.createTransaction('FindUser');
-                        statefulTxn.setTransient({
-                            user_find: tmapData
-                        });
-                        dt = await statefulTxn.submit();
+                        result = await contractOrg2.evaluateTransaction('FindUser', pid);
                     }
                 } catch (error) {
                     res.status(400).json({
                         error: "Patient id doesn't exit\nPlease register first"
                     });
                 }
-                if (dt) {
+                if (result) {
                     try {
 
                         let tmapData = Buffer.from(JSON.stringify(pres));
-                        let result;
                         if (org == mspOrg1) {
                             let statefulTxn = contractOrg1.createTransaction('CreatePrescription');
                             statefulTxn.setTransient({
@@ -545,6 +515,39 @@ async function main() {
 
 
             });
+
+            app.post('/deletedata', async function(req, res) {
+                const { id, org } = req.body;
+
+                try {
+                    const data = { dataID: id };
+                    let tmapData = Buffer.from(JSON.stringify(data));
+                        if (org == mspOrg1) {
+                            let statefulTxn = contractOrg1.createTransaction('DeleteAsset');
+                            statefulTxn.setTransient({
+                                asset_properties: tmapData
+                            });
+                            result = await statefulTxn.submit();
+                        } else {
+                            let statefulTxn = contractOrg2.createTransaction('DeleteAsset');
+                            statefulTxn.setTransient({
+                                asset_properties: tmapData
+                            });
+                            result = await statefulTxn.submit();
+                        }
+                        result = {
+                            success: "yes"
+                        }
+                    res.send(result);
+                } catch (error) {
+                    res.status(400).json({
+                        error: error.toString()
+                    });
+                }
+
+            });
+
+
 
             var server = app.listen(PORT, function() {
                 console.log(`server listening on port 5000`);

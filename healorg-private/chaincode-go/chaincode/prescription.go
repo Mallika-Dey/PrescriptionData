@@ -467,7 +467,7 @@ func (s *SmartContract) DeleteAsset(ctx contractapi.TransactionContextInterface)
 	}
 
 	type prescriptionDelete struct {
-		ID string `json:"prescriptionID"`
+		ID string `json:"dataID"`
 	}
 
 	var prescriptionDeleteInput prescriptionDelete
@@ -477,7 +477,7 @@ func (s *SmartContract) DeleteAsset(ctx contractapi.TransactionContextInterface)
 	}
 
 	if len(prescriptionDeleteInput.ID) == 0 {
-		return fmt.Errorf("prescriptionID field must be a non-empty string")
+		return fmt.Errorf("dataID field must be a non-empty string")
 	}
 
 	// Verify that the client is submitting request to peer in their organization

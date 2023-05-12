@@ -1,3 +1,7 @@
+/*
+Author - Mallika Dey
+*/
+
 package chaincode
 
 import (
@@ -181,52 +185,6 @@ func (s *SmartContract) DeleteUser(ctx contractapi.TransactionContextInterface) 
 
 	return nil
 
-}
-
-func (s *SmartContract) FindUser(ctx contractapi.TransactionContextInterface) (*User, error) {
-	transientMap, err := ctx.GetStub().GetTransient()
-	if err != nil {
-		return nil, fmt.Errorf("Error getting transient: %v", err)
-	}
-	transientDeleteJSON, ok := transientMap["user_find"]
-	if !ok {
-		return nil, fmt.Errorf("userid not found in the transient map")
-	}
-
-	type findUser struct {
-		ID string `json:"userID"`
-	}
-
-	var findUserInput findUser
-	err = json.Unmarshal(transientDeleteJSON, &findUserInput)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal JSON: %v", err)
-	}
-
-	if len(findUserInput.ID) == 0 {
-		return nil, fmt.Errorf("userID field must be a non-empty string")
-	}
-
-	// Verify that the client is submitting request to peer in their organization
-	err = verifyClientOrgMatchesPeerOrg(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("FindUser cannot be performed: Error %v", err)
-	}
-	valAsbytes, err := ctx.GetStub().GetPrivateData(presCollection, findUserInput.ID) //get the asset from chaincode state
-	if err != nil {
-		return nil, fmt.Errorf("failed to read user: %v", err)
-	}
-	if valAsbytes == nil {
-		return nil, fmt.Errorf("user not found: %v", findUserInput.ID)
-	}
-
-	var user *User
-	err = json.Unmarshal(valAsbytes, &user)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal JSON: %v", err)
-	}
-
-	return user, nil
 }
 
 func (s *SmartContract) UpdateUser(ctx contractapi.TransactionContextInterface) error {
