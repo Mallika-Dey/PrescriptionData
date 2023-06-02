@@ -431,7 +431,7 @@ async function main() {
                     Available: available
                 };
                 let result;
-                try {
+               /* try {
                     if (org == mspOrg1) {
                         result = await contractOrg1.evaluateTransaction('FindUser', pid);
                     } else {
@@ -442,7 +442,7 @@ async function main() {
                         error: "Patient id doesn't exit\nPlease register first"
                     });
                 }
-                if (result) {
+                if (result) {*/
                     try {
 
                         let tmapData = Buffer.from(JSON.stringify(pres));
@@ -468,7 +468,7 @@ async function main() {
                             error: error.toString()
                         });
                     }
-                }
+                //}
 
             });
 
